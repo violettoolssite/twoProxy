@@ -450,3 +450,62 @@ button:hover {
     flex-wrap: wrap;
   }
 }
+
+/* 免责声明 Footer */
+.disclaimer-footer {
+  margin-top: 48px;
+  padding: 24px 32px;
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 2px solid var(--border);
+  width: min(1200px, 96%);
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 12px 12px 0 0;
+}
+
+.disclaimer-content {
+  text-align: left;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.9;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.disclaimer-content p {
+  margin: 10px 0;
+}
+
+.disclaimer-content strong {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 14px;
+  display: block;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.disclaimer-content p:first-child {
+  margin-top: 0;
+}
+
+.disclaimer-content p:last-child {
+  margin-top: 16px;
+  margin-bottom: 0;
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 960px) {
+  .disclaimer-footer {
+    padding: 20px 16px;
+    margin-top: 32px;
+  }
+  
+  .disclaimer-content {
+    font-size: 12px;
+  }
+}
