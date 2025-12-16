@@ -56,8 +56,8 @@
 
 > 实际部署建议 **至少两台服务器**：
 >
-> - 一台香港/境外节点：负责前端站点与通用 `/file/https` 代理。
-> - 一台广州/境内或就近节点：负责 GitHub Release 软件包与 Docker Registry 反代。
+> - 一台 **香港 / 境外节点**：负责前端站点与通用 `/file/https` 代理（本仓库代码所在的机器）。
+> - 一台 **广州 / 境内或就近节点**：负责 GitHub Release 软件包与 Docker Registry 反代。
 >
 > 后续可以在这两台服务器前加上 **Cloudflare / 腾讯 EdgeOne** 等边缘加速服务，为终端用户提供就近接入和 DDoS 防护。
 
@@ -102,9 +102,10 @@ return "https://GZ_PROXY_DOMAIN:9090/github" + pathname + (u.search || "");
 
 示例 Nginx 配置见：
 
-- `deploy/nginx.docker-proxy.conf.dockerhub.example`
-- `deploy/nginx.docker-proxy.conf.tencent.example`
-- `deploy/nginx.docker-proxy.conf.aliyun.example`
+- **香港节点或广州节点均可部署一套 Registry 代理**，根据你的拓扑选择：
+  - `deploy/nginx.docker-proxy.conf.dockerhub.example`  → 反代 Docker Hub 官方。
+  - `deploy/nginx.docker-proxy.conf.tencent.example`    → 反代腾讯云 TCR 内网地址。
+  - `deploy/nginx.docker-proxy.conf.aliyun.example`     → 反代阿里云 ACR 内网地址。
 
 前端 Docker 模块只负责展示配置 JSON 和单次拉取命令，实际请求由 Docker CLI 直连该节点。
 

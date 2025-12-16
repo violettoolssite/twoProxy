@@ -1,0 +1,141 @@
+"""
+Guangzhou GitHub Release 下载代理示例
+------------------------------------
+
+部署位置：广州节点（例如 violetteam.cloud）
+
+功能：
+- 提供简单的 HTTP 接口，将 GitHub 直链通过本机代理（可选）下载后流式返回客户端。
+- 适配前端生成的加速地址：
+  - https://GZ_PROXY_DOMAIN:9090/github/<owner>/<repo>/releases/download/.../file.tgz
+
+Nginx 示例（见 deploy/nginx.github-proxy.conf.example）会把所有请求转发到本服务：
+- 对外： https://GZ_PROXY_DOMAIN:9090/...
+- 对内： http://127.0.0.1:18080/...
+
+注意：
+- 不要在公开仓库中提交真实的 HTTP_PROXY/SS/Token 等敏感信息。
+- 生产环境部署时，请在系统环境变量中设置 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY 等。
+"""
+
+import os
+import logging
+from flask import Flask, request, Response, stream_with_context, jsonify
+import requests
+
+app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+
+
+def get_proxies() -> dict:
+    """
+    从环境变量中读取 HTTP 代理配置。
+    - 建议在宿主机或 systemd/容器中设置 HTTP_PROXY/HTTPS_PROXY/ALL_PROXY。
+    - 例如：socks5h://127.0.0.1:1080 或 http://127.0.0.1:8118
+    """
+    http_proxy = os.getenv("HTTP_PROXY", "")
+    https_proxy = os.getenv("HTTPS_PROXY", http_proxy)
+    if not http_proxy and not https_proxy:
+        return {}
+    return {"http": http_proxy, "https": https_proxy}
+
+
+@app.route("/")
+def index():
+    return """
+<h1>GitHub Download Proxy (Guangzhou)</h1>
+<p>Usage:</p>
+<ul>
+  <li><code>/download?url=GITHUB_URL</code></li>
+  <li><code>/github/owner/repo/path/to/file</code></li>
+  <li><code>/status</code> - Service status</li>
+</ul>
+""".strip()
+
+
+@app.route("/status")
+def status():
+    return jsonify({"status": "ok", "proxy": bool(get_proxies())})
+
+
+def download_file(url: str) -> Response:
+    """
+    通用文件下载函数：
+    - 先 HEAD 获取 Content-Type 与 Content-Length
+    - 再以流式方式 GET 返回给客户端
+    """
+    try:
+        proxies = get_proxies()
+        headers = {"User-Agent": "Mozilla/5.0"}
+
+        # 先 HEAD 确认资源存在并获取类型
+        head_resp = requests.head(
+            url,
+            headers=headers,
+            proxies=proxies or None,
+            timeout=10,
+            allow_redirects=True,
+        )
+        head_resp.raise_for_status()
+
+        content_type = head_resp.headers.get("Content-Type", "application/octet-stream")
+        content_length = head_resp.headers.get("Content-Length", "")
+
+        def generate():
+            with requests.get(
+                url,
+                headers=headers,
+                proxies=proxies or None,
+                stream=True,
+                timeout=300,
+            ) as r:
+                r.raise_for_status()
+                for chunk in r.iter_content(chunk_size=1024 * 1024):  # 1MB
+                    if chunk:
+                        yield chunk
+
+        filename = os.path.basename(url.split("?")[0]) or "download.bin"
+
+        response_headers = {
+            "Content-Type": content_type,
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+        if content_length:
+            response_headers["Content-Length"] = content_length
+
+        return Response(stream_with_context(generate()), headers=response_headers)
+
+    except Exception as exc:  # noqa: BLE001
+        app.logger.error("Download error for %s: %s", url, exc)
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/download")
+def download():
+    url = request.args.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "Missing url"}), 400
+    app.logger.info("Download request: %s", url)
+    return download_file(url)
+
+
+@app.route("/github/<path:url_suffix>")
+def github_proxy(url_suffix: str):
+    """
+    GitHub 快捷路由：
+    /github/owner/repo/releases/.../file
+      -> https://github.com/owner/repo/releases/.../file
+    """
+    github_url = f"https://github.com/{url_suffix}"
+    app.logger.info("GitHub proxy direct download: %s", github_url)
+    return download_file(github_url)
+
+
+if __name__ == "__main__":
+    print("Starting GitHub Proxy Server (Guangzhou) on 0.0.0.0:18080 ...")
+    app.run(host="0.0.0.0", port=18080, threaded=True, debug=False)
+
+
