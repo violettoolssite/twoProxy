@@ -103,9 +103,82 @@ return "https://GZ_PROXY_DOMAIN:9090/github" + pathname + (u.search || "");
 示例 Nginx 配置见：
 
 - **香港节点或广州节点均可部署一套 Registry 代理**，根据你的拓扑选择：
-  - `deploy/nginx.docker-proxy.conf.dockerhub.example`  → 反代 Docker Hub 官方。
-  - `deploy/nginx.docker-proxy.conf.tencent.example`    → 反代腾讯云 TCR 内网地址。
-  - `deploy/nginx.docker-proxy.conf.aliyun.example`     → 反代阿里云 ACR 内网地址。
+  - `deploy/nginx.docker-proxy.dockerhub.conf`  → 反代 Docker Hub 官方。
+  - `deploy/nginx.docker-proxy.tencent.conf`    → 反代腾讯云 TCR 内网地址。
+  - `deploy/nginx.docker-proxy.aliyun.conf`     → 反代阿里云 ACR 内网地址。
+
+---
+
+## 一键部署脚本
+
+为方便复现，本仓库提供了两份基础部署脚本（推荐系统为 **Ubuntu 24**）：
+
+- `scripts/deploy_hk.sh`：在 **香港节点** 运行
+  - 安装 `nginx`、`certbot`。
+  - 同步前端静态文件到 `/var/www/mirror`。
+  - 安装 `deploy/nginx.mirror.conf` 到 `/etc/nginx/sites-available/mirror.conf` 并启用。
+  - 测试并重载 Nginx。
+  - 后续你需要用 `certbot` 为 `YOUR_HK_DOMAIN` 签发证书，并（可选）运行 `scripts/build_ollama_install.sh` 生成增强版 `ollama-install.sh`。
+
+- `scripts/deploy_gz.sh`：在 **广州节点** 运行
+  - 安装 `nginx`、`python3`、`pip`、`flask`、`requests`。
+  - 安装 `scripts/github_proxy_gz.py` 到 `/opt/github-proxy`。
+  - 创建 systemd 服务 `github-proxy.service` 并启动。
+  - 安装 `deploy/nginx.github-proxy.conf` 到 `/etc/nginx/sites-available/github-proxy.conf` 并启用。
+  - 测试并重载 Nginx。
+  - 后续你需要用 `certbot` 为 `YOUR_GZ_DOMAIN` 签发证书，并按需在该服务上配置 HTTP_PROXY/HTTPS_PROXY（例如本机 ss-local）。
+
+> 使用方式（两台服务器都要先拉取本仓库）：
+>
+> ```bash
+> # 香港节点（推荐路径：/opt/twoProxy）
+> git clone https://github.com/violettoolssite/twoProxy.git
+> cd twoProxy
+> sudo bash scripts/deploy_hk.sh
+>
+> # 广州节点
+> git clone https://github.com/violettoolssite/twoProxy.git
+> cd twoProxy
+> sudo bash scripts/deploy_gz.sh
+> ```
+>
+> **配置域名或 IP：**
+>
+> - **方式一：使用 sed 自动替换（推荐）**
+>
+>   ```bash
+>   # 获取服务器公网 IP（如果使用 IP 而非域名）
+>   GZ_IP=$(curl -s ifconfig.me || curl -s ip.sb || curl -s icanhazip.com)
+>   
+>   # 替换广州节点配置中的域名占位符为 IP
+>   sed -i "s/YOUR_GZ_DOMAIN/$GZ_IP/g" deploy/nginx.github-proxy.conf
+>   
+>   # 替换香港节点配置中的域名占位符（如果有域名）
+>   # sed -i "s/YOUR_HK_DOMAIN/your-hk-domain.com/g" deploy/nginx.mirror.conf
+>   ```
+>
+> - **方式二：手动编辑文件**
+>
+>   编辑 `deploy/nginx.mirror.conf` 和 `deploy/nginx.github-proxy.conf`，将 `YOUR_HK_DOMAIN` / `YOUR_GZ_DOMAIN` 替换为实际域名或 IP。
+>
+> **重要：如果广州服务器只有 IP 没有域名**
+>
+> 1. 使用 sed 替换为 IP 后，编辑 `deploy/nginx.github-proxy.conf`：
+>    ```bash
+>   sudo nano deploy/nginx.github-proxy.conf
+>   ```
+>
+> 2. 注释掉所有 SSL 相关配置（`ssl_certificate`、`ssl_certificate_key`、`include /etc/letsencrypt/...`、`ssl_dhparam`），并将 `listen 9090 ssl http2;` 改为 `listen 9090;`。
+>
+> 3. 同时需要修改前端 `js/app.js`，将生成的 GitHub 加速地址从 `https://` 改为 `http://`：
+>    ```bash
+>   sed -i 's|https://violetteam.cloud:9090|http://'"$GZ_IP"':9090|g' js/app.js
+>   ```
+>
+> 4. 重新运行部署脚本或手动重载 Nginx：
+>    ```bash
+>   sudo nginx -t && sudo systemctl reload nginx
+>   ```
 
 前端 Docker 模块只负责展示配置 JSON 和单次拉取命令，实际请求由 Docker CLI 直连该节点。
 
