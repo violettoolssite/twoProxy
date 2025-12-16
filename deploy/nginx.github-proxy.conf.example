@@ -1,0 +1,30 @@
+server {
+    # GitHub Release 专用代理节点
+    listen 9090 ssl http2;
+    server_name GZ_PROXY_DOMAIN; # 例如 violetteam.cloud
+
+    ssl_certificate     /etc/letsencrypt/live/GZ_PROXY_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/GZ_PROXY_DOMAIN/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    access_log off;
+
+    # 所有 /github/... 请求转发到本机下载服务（Python / gh-proxy 等）
+    location /github/ {
+        proxy_pass http://127.0.0.1:18080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_http_version 1.1;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout    600s;
+        proxy_read_timeout    600s;
+    }
+}
+
+

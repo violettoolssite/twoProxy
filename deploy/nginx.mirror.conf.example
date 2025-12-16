@@ -1,0 +1,78 @@
+server {
+    listen 443 ssl http2;
+    server_name YOUR_FRONTEND_DOMAIN; # 例如 mirror.example.com
+
+    root /var/www/mirror;
+    index index.html;
+    client_max_body_size 0;
+
+    # SSL 证书（使用 certbot 等方式签发）
+    ssl_certificate     /etc/letsencrypt/live/YOUR_FRONTEND_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/YOUR_FRONTEND_DOMAIN/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # DNS 解析
+    resolver 8.8.8.8 1.1.1.1 valid=300s;
+    resolver_timeout 5s;
+
+    # 首页（前端 SPA）
+    location = / {
+        try_files /index.html =404;
+    }
+
+    # 静态资源
+    location ^~ /css/ {
+        access_log off;
+        expires 7d;
+        try_files $uri =404;
+    }
+
+    location ^~ /js/ {
+        access_log off;
+        expires 7d;
+        try_files $uri =404;
+    }
+
+    # --- 通用 HTTPS 直链代理 ---
+    # 形如：/file/https/example.com/path/to/file
+    location ~ ^/file/https/([^/]+)(/.*)$ {
+        set $dst_host $1;
+        set $dst_path $2;
+
+        proxy_set_header Host $dst_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_ssl_server_name on;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_http_version 1.1;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout    300s;
+        proxy_read_timeout    300s;
+
+        proxy_pass https://$dst_host$dst_path$is_args$args;
+    }
+
+    # --- 可选：Ollama install.sh 特殊处理 ---
+    # 如需使用 /var/www/mirror/ollama-install.sh，请取消注释：
+    #
+    # location = /file/https/ollama.com/install.sh {
+    #     default_type text/x-sh;
+    #     root /var/www/mirror;
+    #     try_files /ollama-install.sh =404;
+    # }
+
+    # 兜底：其他请求如 /github/... 可 include 单独的 github-web.conf
+    # include /etc/nginx/snippets/github-web.conf;
+}
+
+server {
+    listen 80;
+    server_name YOUR_FRONTEND_DOMAIN;
+    return 301 https://$host$request_uri;
+}
+
+

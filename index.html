@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mirror 加速站</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<header class="navbar glass">
+  <div class="logo">
+    <div>
+      <div class="logo-title">YLJD 加速站</div>
+      <div class="logo-sub">面向国内的访问与下载优化</div>
+    </div>
+  </div>
+  <nav class="nav-links">
+    <a href="#/github" id="nav-github">GitHub</a>
+    <a href="#/docker" id="nav-docker">Docker</a>
+    <a href="#/download" id="nav-download">文件下载</a>
+  </nav>
+</header>
+
+<main class="page-layout">
+  <section class="hero glass">
+    <div>
+      <p class="eyebrow">面向国内的统一加速入口</p>
+      <h1>生成镜像地址，专注 GitHub / Docker / 下载</h1>
+      <p class="subtitle">GitHub 仓库与 Release、Docker Hub、任意国外直链，三类场景同等支持。</p>
+      <div class="hero-actions">
+        <a class="btn primary" href="#/download" id="cta-download">生成下载链接</a>
+        <a class="btn ghost" href="#/github">搜索 GitHub 仓库</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-number">GitHub 加速</div>
+        <div class="stat-label">仓库搜索与镜像 Clone</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">Docker 加速</div>
+        <div class="stat-label">镜像源配置开箱即用</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">文件加速</div>
+        <div class="stat-label">不限域名与文件类型</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cards">
+    <div class="card glass" id="page-github">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">GitHub 搜索 & Clone</p>
+          <h2>仓库检索与镜像 Clone</h2>
+        </div>
+        <div class="tag">GitHub</div>
+      </div>
+      <div class="search-box">
+        <input id="gh-keyword" placeholder="搜索仓库，如：vue / ollama / react" />
+        <button onclick="searchGithub(1)">搜索仓库</button>
+        <div id="gh-loading" class="spinner" aria-label="加载中"></div>
+      </div>
+      <div class="hint">结果中的仓库名称可点击进入代理的 GitHub Web 页面，Clone 链接自动补全镜像前缀，直接复制即可。</div>
+      <div id="gh-results" class="list"></div>
+      <div id="gh-pagination" class="pagination"></div>
+    </div>
+
+    <div class="card glass" id="page-docker">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">Docker 镜像加速</p>
+          <h2>镜像源配置，开箱即用</h2>
+        </div>
+        <div class="tag blue">Docker</div>
+      </div>
+      <p class="hint">在 Docker 客户端添加如下 registry mirrors 配置：</p>
+      <div class="code-actions center">
+        <pre class="code-block highlight" id="docker-tee">cat <<'EOF' | sudo tee /etc/docker/daemon.json
+{
+  "registry-mirrors": [
+    "https://mirror.yljdteam.com"
+  ]
+}
+EOF
+sudo systemctl restart docker</pre>
+        <button class="copy-btn" onclick="copyTextById('docker-tee')">复制配置</button>
+      </div>
+      <p class="hint">若仅需单次使用，可直接从镜像域名拉取：</p>
+      <div class="code-actions center">
+        <pre class="code-block highlight" id="docker-single">docker pull mirror.yljdteam.com/library/nginx:latest</pre>
+        <button class="copy-btn" onclick="copyTextById('docker-single')">复制命令</button>
+      </div>
+    </div>
+
+    <div class="card glass" id="page-download">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">通用文件加速</p>
+          <h2>任何国外直链，自动加速</h2>
+        </div>
+        <div class="tag purple">Download</div>
+      </div>
+      <p class="hint">GitHub Release / 通用 CDN / Python 官网等链接均可，支持直接粘贴 curl / wget 安装命令自动替换为加速地址。</p>
+    <div class="search-box">
+        <input id="dl-url" placeholder="粘贴下载链接，例如：https://www.python.org/... 或 GitHub Release" />
+      <button onclick="genDownload()">生成加速地址</button>
+      </div>
+      <div class="download-actions">
+        <input id="dl-result" class="output-link" readonly placeholder="生成的加速地址将显示在这里" />
+        <button class="copy-btn" onclick="copyTextById('dl-result')">复制地址</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
