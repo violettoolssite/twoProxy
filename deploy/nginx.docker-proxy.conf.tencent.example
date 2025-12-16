@@ -1,0 +1,42 @@
+server {
+    # Docker Registry 代理节点（腾讯云内网加速）
+    listen 8080 ssl http2;
+    server_name DOCKER_PROXY_DOMAIN; # 例如 tcr-proxy.example.com
+
+    ssl_certificate     /etc/letsencrypt/live/DOCKER_PROXY_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/DOCKER_PROXY_DOMAIN/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    access_log /var/log/nginx/tencent-docker-proxy-access.log;
+    error_log  /var/log/nginx/tencent-docker-proxy-error.log;
+
+    # 腾讯云 TCR / Docker 内网加速地址示例
+    # 请将 TCR_INTERNAL_ENDPOINT 换成你的实际内网域名，如：
+    # ccr.ccs.tencentyun.com 或 your-registry.tencentcloudcr.com
+    location /v2/ {
+        proxy_pass https://TCR_INTERNAL_ENDPOINT;
+
+        proxy_set_header Host TCR_INTERNAL_ENDPOINT;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout    60s;
+        proxy_read_timeout    60s;
+        proxy_buffering       off;
+    }
+
+    location /health {
+        return 200 'Docker Registry Proxy (Tencent Cloud)\nStatus: OK\n';
+        add_header Content-Type text/plain;
+    }
+
+    location = / {
+        return 200 'Docker Registry Proxy (Tencent Cloud) on port 8080\n';
+        add_header Content-Type text/plain;
+    }
+}
+
+

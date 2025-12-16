@@ -15,7 +15,9 @@
 - **Docker 模块**
   - 提供 `registry-mirrors` 配置 JSON。
   - 提供单次 `docker pull` 示例命令。
-  - 示例 Nginx 代理，将 Docker Registry 请求转发到云厂商的官方加速器。
+  - 示例 Nginx 代理：
+    - 反代 **Docker Hub 官方 Registry**。
+    - 也给出 **腾讯云内网加速地址** / **阿里云内网加速地址** 的示例反代配置。
 
 - **文件下载 / 脚本 / GitHub Release 模块**
   - 支持任意直链加速：`https://origin.com/path` → `https://YOUR_FRONTEND_DOMAIN/file/https/origin.com/path`。
@@ -52,6 +54,13 @@
 
 ## 部署架构（推荐）
 
+> 实际部署建议 **至少两台服务器**：
+>
+> - 一台香港/境外节点：负责前端站点与通用 `/file/https` 代理。
+> - 一台广州/境内或就近节点：负责 GitHub Release 软件包与 Docker Registry 反代。
+>
+> 后续可以在这两台服务器前加上 **Cloudflare / 腾讯 EdgeOne** 等边缘加速服务，为终端用户提供就近接入和 DDoS 防护。
+
 ### 1. 香港节点（前端 + 通用代理）
 
 职责：
@@ -86,9 +95,16 @@ return "https://GZ_PROXY_DOMAIN:9090/github" + pathname + (u.search || "");
 职责：
 
 - 作为 Docker `registry-mirrors` 源，为 Docker Hub 镜像提供加速。
-- Nginx 将 `/v2/*` 请求转发到云厂商的官方 Registry 加速器（例如腾讯云）。
+- Nginx 将 `/v2/*` 请求转发到相应的 Registry：
+  - Docker Hub 官方：`https://registry-1.docker.io`
+  - 腾讯云镜像服务（内网地址示例）
+  - 阿里云容器镜像服务（内网地址示例）
 
-示例 Nginx 配置见：`deploy/nginx.docker-proxy.conf.example`。
+示例 Nginx 配置见：
+
+- `deploy/nginx.docker-proxy.conf.dockerhub.example`
+- `deploy/nginx.docker-proxy.conf.tencent.example`
+- `deploy/nginx.docker-proxy.conf.aliyun.example`
 
 前端 Docker 模块只负责展示配置 JSON 和单次拉取命令，实际请求由 Docker CLI 直连该节点。
 
@@ -156,6 +172,7 @@ python3 -m http.server 8080
 
 ## License
 
-（根据你的偏好选择：MIT / Apache-2.0 / GPL-3.0 等，这里暂留空白。）
+本项目采用 [MIT License](LICENSE) 开源协议发布，你可以自由地使用、修改和分发本项目的代码。
+
 
 
