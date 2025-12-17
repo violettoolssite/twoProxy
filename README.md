@@ -3,6 +3,10 @@
 面向国内用户的 GitHub / Docker / 通用文件加速前端与配置示例。  
 本仓库只包含 **静态前端页面** 与 **示例配置脚本**，实际部署需要配合 Nginx、Shadowsocks、gh‑proxy 或自建 Python 服务等组件。
 
+## 在线演示
+
+🌐 **访问地址**：[https://mirror.yljdteam.com/](https://mirror.yljdteam.com/)
+
 ---
 
 ## 功能概览
