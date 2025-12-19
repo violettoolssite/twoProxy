@@ -2,8 +2,14 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="/manifest.json" />
   <title>Mirror 加速站</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="./css/style.css?v=20250118" />
 </head>
 <body>
 
@@ -18,36 +24,85 @@
     <a href="#/github" id="nav-github">GitHub</a>
     <a href="#/docker" id="nav-docker">Docker</a>
     <a href="#/download" id="nav-download">文件下载</a>
+    <a href="#/email" id="nav-email">临时邮箱</a>
+    <a href="#/sponsors" id="nav-sponsors">感谢名单</a>
+    <a href="/user/" id="nav-user" class="btn-login">登录 / 注册</a>
   </nav>
 </header>
 
-<main class="page-layout">
-  <section class="hero glass">
-    <div>
-      <p class="eyebrow">面向国内的统一加速入口</p>
-      <h1>生成镜像地址，专注 GitHub / Docker / 下载</h1>
-      <p class="subtitle">GitHub 仓库与 Release、Docker Hub、任意国外直链，三类场景同等支持。</p>
-      <div class="hero-actions">
-        <a class="btn primary" href="#/download" id="cta-download">生成下载链接</a>
-        <a class="btn ghost" href="#/github">搜索 GitHub 仓库</a>
+<!-- 欢迎模态框 -->
+<div id="welcome-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content glass" style="max-width: 600px;">
+    <button class="modal-close" onclick="closeWelcomeModal()" aria-label="关闭">×</button>
+    <div style="padding: 20px 8px;">
+      <h2 style="font-size: 22px; margin-bottom: 20px; color: var(--text); text-align: center;">欢迎使用 YLJD 加速站</h2>
+      
+      <div style="text-align: left; margin-bottom: 24px;">
+        <p style="font-size: 15px; line-height: 1.9; color: var(--text); margin-bottom: 16px;">
+          本站提供 GitHub、Docker、文件下载等加速服务，完全免费开放：
+        </p>
+        <ul style="font-size: 14px; line-height: 2; color: var(--text); padding-left: 20px;">
+          <li>无流量限制、无速度限制</li>
+          <li>无需注册即可使用基础功能</li>
+          <li>注册后可使用专属子域名</li>
+          <li>无任何付费套餐</li>
+        </ul>
       </div>
-    </div>
-    <div class="hero-stats">
-      <div class="stat">
-        <div class="stat-number">GitHub 加速</div>
-        <div class="stat-label">仓库搜索与镜像 Clone</div>
-      </div>
-      <div class="stat">
-        <div class="stat-number">Docker 加速</div>
-        <div class="stat-label">镜像源配置开箱即用</div>
-      </div>
-      <div class="stat">
-        <div class="stat-number">文件加速</div>
-        <div class="stat-label">不限域名与文件类型</div>
-      </div>
-    </div>
-  </section>
 
+      <div style="background: rgba(59, 130, 246, 0.1); padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 24px;">
+        <p style="font-size: 14px; line-height: 1.8; color: var(--text);">
+          本站的开发和维护需要大量时间和精力投入，运营成本每月需要几百元。<br>
+          如果您觉得本站好用，可以赞助我，您的支持是我继续开发的动力。
+        </p>
+      </div>
+
+      <div style="text-align: center; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
+        <div style="padding: 10px; background: white; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+          <img src="/pay.jpg" alt="微信赞助" style="width: 120px; height: 120px; display: block;" />
+          <p style="margin-top: 6px; font-size: 11px; color: #666;">微信</p>
+        </div>
+        <div style="padding: 10px; background: white; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+          <img src="/alipay.jpg" alt="支付宝赞助" style="width: 120px; height: 120px; display: block;" />
+          <p style="margin-top: 6px; font-size: 11px; color: #666;">支付宝</p>
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <button class="btn primary" onclick="closeWelcomeModal()">开始使用</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 通知模态框（替代 alert） -->
+<div id="notify-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content glass" style="max-width: 400px;">
+    <button class="modal-close" onclick="closeNotifyModal()" aria-label="关闭">×</button>
+    <div style="text-align: center; padding: 8px 0;">
+      <div id="notify-icon" style="font-size: 20px; font-weight: bold; margin-bottom: 16px; color: #3b82f6;">[信息]</div>
+      <div id="notify-message" style="font-size: 16px; color: var(--text); line-height: 1.5;"></div>
+      <div style="margin-top: 24px;">
+        <button class="btn primary" onclick="closeNotifyModal()">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirm-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content glass" style="max-width: 400px;">
+    <button class="modal-close" onclick="closeConfirmModal()" aria-label="关闭">×</button>
+    <div style="text-align: center; padding: 8px 0;">
+      <div style="font-size: 20px; font-weight: bold; margin-bottom: 16px; color: #f59e0b;">[警告]</div>
+      <div id="confirm-message" style="font-size: 16px; color: var(--text); line-height: 1.5; margin-bottom: 24px;"></div>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button class="btn ghost" onclick="closeConfirmModal()">取消</button>
+        <button class="btn primary" id="confirm-ok-btn">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="page-layout">
   <section class="cards">
     <div class="card glass" id="page-github">
       <div class="card-header">
@@ -71,27 +126,38 @@
       <div class="card-header">
         <div>
           <p class="eyebrow">Docker 镜像加速</p>
-          <h2>镜像源配置，开箱即用</h2>
+          <h2>镜像搜索与加速拉取</h2>
         </div>
         <div class="tag blue">Docker</div>
       </div>
-      <p class="hint">在 Docker 客户端添加如下 registry mirrors 配置：</p>
+
+      <!-- Docker Hub 镜像搜索 -->
+      <div class="search-box">
+        <input id="docker-keyword" placeholder="搜索 Docker Hub 镜像，如：nginx / python / redis" />
+        <button onclick="searchDocker(1)">搜索镜像</button>
+        <div id="docker-loading" class="spinner" aria-label="加载中"></div>
+      </div>
+      <div class="hint">搜索结果会同时给出香港 / 广州两个节点的加速拉取命令，并注明节点信息，点击复制即可使用。</div>
+      <div id="docker-results" class="list"></div>
+      <div id="docker-pagination" class="pagination"></div>
+
+      <!-- 配置说明 -->
+      <div class="section-divider"></div>
+      <p class="hint">推荐通过 Docker Daemon 配置永久使用镜像加速（同时配置香港 / 广州两个节点，Docker 会自动选择可用节点）：</p>
       <div class="code-actions center">
         <pre class="code-block highlight" id="docker-tee">cat <<'EOF' | sudo tee /etc/docker/daemon.json
 {
   "registry-mirrors": [
-    "https://mirror.yljdteam.com"
+    "https://mirror.yljdteam.com",
+    "https://violetteam.cloud"
   ]
 }
 EOF
 sudo systemctl restart docker</pre>
         <button class="copy-btn" onclick="copyTextById('docker-tee')">复制配置</button>
       </div>
-      <p class="hint">若仅需单次使用，可直接从镜像域名拉取：</p>
-      <div class="code-actions center">
-        <pre class="code-block highlight" id="docker-single">docker pull mirror.yljdteam.com/library/nginx:latest</pre>
-        <button class="copy-btn" onclick="copyTextById('docker-single')">复制命令</button>
-      </div>
+
+      <p class="hint">上述配置会把香港（mirror.yljdteam.com）和广州（violetteam.cloud）都作为 Docker 镜像仓库加速节点，无需再为单个镜像手动改命令。</p>
     </div>
 
     <div class="card glass" id="page-download">
@@ -109,7 +175,176 @@ sudo systemctl restart docker</pre>
       </div>
       <div class="download-actions">
         <input id="dl-result" class="output-link" readonly placeholder="生成的加速地址将显示在这里" />
+        <div class="download-buttons">
         <button class="copy-btn" onclick="copyTextById('dl-result')">复制地址</button>
+          <button class="download-btn" onclick="downloadFile()" id="download-btn" disabled>一键下载</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 临时邮箱 -->
+  <section class="card glass" id="page-email" style="display: none;">
+    <div class="card-header">
+      <div>
+        <p class="eyebrow">临时邮箱服务</p>
+        <h2>无限临时邮箱</h2>
+      </div>
+      <div class="tag">Email</div>
+    </div>
+    
+    <div class="card-content">
+      <p style="font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 16px;">
+        提供多个域名的临时邮箱服务，包括主域名和子域名，无需注册，即用即弃，保护您的隐私。
+      </p>
+      
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 300px;">
+          <input type="text" id="email-name" placeholder="输入邮箱前缀或点击随机生成" style="flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--text); font-size: 14px;" />
+          <span style="color: var(--text); font-size: 14px; margin: 0 4px;">@</span>
+          <select id="email-domain" style="padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--text); font-size: 14px; cursor: pointer; outline: none; min-width: 200px;">
+            <option value="logincursor.xyz">logincursor.xyz</option>
+            <option value="email.logincursor.xyz">email.logincursor.xyz</option>
+            <option value="vip.logincursor.xyz">vip.logincursor.xyz</option>
+            <option value="qxfy.store">qxfy.store</option>
+            <option value="email.qxfy.store">email.qxfy.store</option>
+            <option value="kami666.xyz">kami666.xyz</option>
+            <option value="email.kami666.xyz">email.kami666.xyz</option>
+            <option value="login.kami666.xyz">login.kami666.xyz</option>
+            <option value="deploytools.site">deploytools.site</option>
+          </select>
+        </div>
+        <button class="btn ghost" onclick="generateRandomEmail()" title="随机生成邮箱">随机</button>
+        <button class="btn primary" onclick="generateEmail()">生成邮箱</button>
+      </div>
+      
+      <!-- 历史邮箱 -->
+      <div id="email-history" style="margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="font-size: 13px; color: var(--text); font-weight: 500;">最近使用的邮箱</div>
+          <button class="btn ghost" onclick="clearEmailHistory()" style="font-size: 12px; padding: 4px 8px;">清空</button>
+        </div>
+        <div id="email-history-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div style="text-align: center; width: 100%; padding: 20px 0; color: var(--text-muted); font-size: 13px;">
+            暂无历史记录
+          </div>
+        </div>
+      </div>
+      
+      <div id="email-result" style="display: none; margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 4px solid #3b82f6;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">您的临时邮箱地址：</div>
+            <div style="font-size: 16px; font-weight: bold; color: #3b82f6; font-family: monospace;" id="current-email"></div>
+          </div>
+          <button class="btn ghost" onclick="copyCurrentEmail()">复制</button>
+        </div>
+        <button class="btn primary" onclick="checkEmails()" style="width: 100%;">查看收件箱</button>
+      </div>
+      
+      <div id="email-inbox" style="display: none; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="font-size: 16px; color: var(--text);">收件箱</h3>
+            <span class="refresh-indicator" style="display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(59, 130, 246, 0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;" title="自动刷新中（每10秒）"></span>
+          </div>
+          <button class="btn ghost" onclick="refreshEmails()">手动刷新</button>
+        </div>
+        <div id="email-list">
+          <div style="text-align: center; padding: 40px 0; color: var(--text-muted);">
+            加载中...
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px; padding: 12px; background: rgba(250, 204, 21, 0.1); border-radius: 6px; border-left: 3px solid #facc15;">
+        <p style="font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 0;">
+          <strong>时间限制：</strong>邮件会在 24 小时后自动清除，请及时查看和使用。
+        </p>
+      </div>
+      
+      <div style="margin-top: 16px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border-left: 3px solid #3b82f6;">
+        <p style="font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 12px;">
+          <strong>Cursor 注册说明：</strong>目前只有 <strong style="color: #3b82f6;">logincursor.xyz</strong> 域名及其子域名（如 email.logincursor.xyz、vip.logincursor.xyz 等）能够注册 Cursor，其它域名已被 Cursor 屏蔽。
+        </p>
+        <div style="padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.3);">
+          <p style="font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 8px;">
+            <strong>🎁 域名支持：</strong>如果您有多余空闲的域名，愿意免费为本站添加新的邮箱后缀以提供更好的邮件服务，欢迎联系我们！
+          </p>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+            <span style="font-size: 13px; color: var(--text); font-weight: 500;">联系方式：</span>
+            <span style="font-size: 16px; font-weight: bold; color: #3b82f6; font-family: monospace; padding: 4px 12px; background: rgba(59, 130, 246, 0.15); border-radius: 4px;">QQ: 1494458927</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 感谢名单页面 -->
+  <section class="card glass" id="page-sponsors" style="display: none; max-width: 900px; margin: 0 auto;">
+    <div class="card-header">
+      <div>
+        <p class="eyebrow">感谢支持</p>
+        <h2>🙏 感谢名单</h2>
+      </div>
+    </div>
+    
+    <div class="card-content">
+      <p style="font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 24px; text-align: center;">
+        感谢以下用户对本站的无私奉献与支持！
+      </p>
+      
+      <!-- 域名赞助 -->
+      <div style="margin-bottom: 32px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+          <div style="width: 4px; height: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 2px;"></div>
+          <h3 style="font-size: 18px; color: var(--text); font-weight: 600; margin: 0;">域名赞助者</h3>
+          <span style="font-size: 13px; color: var(--text-muted);">（免费提供域名支持）</span>
+        </div>
+        <div style="padding: 20px; background: rgba(102, 126, 234, 0.05); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.2);">
+          <div id="domain-sponsors" style="display: flex; flex-wrap: wrap; gap: 12px; min-height: 60px; align-items: center;">
+            <div style="color: var(--text-muted); font-size: 14px; width: 100%; text-align: center;">加载中...</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 资金赞助 -->
+      <div style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+          <div style="width: 4px; height: 24px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 2px;"></div>
+          <h3 style="font-size: 18px; color: var(--text); font-weight: 600; margin: 0;">资金赞助者</h3>
+          <span style="font-size: 13px; color: var(--text-muted);">（为爱发电，感谢支持）</span>
+        </div>
+        <div style="padding: 20px; background: rgba(245, 87, 108, 0.05); border-radius: 8px; border: 1px solid rgba(245, 87, 108, 0.2);">
+          <div id="money-sponsors" style="display: flex; flex-wrap: wrap; gap: 12px; min-height: 60px; align-items: center;">
+            <div style="color: var(--text-muted); font-size: 14px; width: 100%; text-align: center;">加载中...</div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="padding: 16px; background: rgba(59, 130, 246, 0.08); border-radius: 8px; text-align: center;">
+        <p style="font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 12px;">
+          如果您也愿意支持我们，欢迎联系！
+        </p>
+        <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 15px; font-weight: bold; color: #3b82f6; font-family: monospace; padding: 6px 16px; background: rgba(59, 130, 246, 0.15); border-radius: 6px;">QQ: 1494458927</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 邀请码说明（页面底部） -->
+  <section class="card glass" style="max-width: 900px; margin: 32px auto 24px auto;">
+    <div style="padding: 24px;">
+      <h3 style="font-size: 18px; margin-bottom: 16px; color: var(--text); text-align: center;">分享有礼</h3>
+      <p style="font-size: 14px; line-height: 2; color: var(--text); text-align: center; margin-bottom: 20px;">
+        通过您的邀请码注册的用户，你们将会成为同一个团队的成员<br>
+        享受团队协作、数据共享等更多功能
+      </p>
+      <div style="text-align: center;">
+        <a href="/user/" class="btn primary" style="display: inline-block; padding: 12px 32px; text-decoration: none;">
+          获取我的邀请码
+        </a>
       </div>
     </div>
   </section>
@@ -127,6 +362,12 @@ sudo systemctl restart docker</pre>
   </div>
 </footer>
 
-<script src="/js/app.js"></script>
+<style>
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>
+<script src="./js/app.js?v=20250148"></script>
 </body>
 </html>

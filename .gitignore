@@ -1,0 +1,138 @@
+# ===================================
+# Mirror 加速站 - Git 忽略文件
+# ===================================
+
+# ============= 敏感信息 =============
+# 环境变量和配置
+.env
+.env.*
+*.env
+api/.env
+api/.env.*
+
+# 凭证文件
+*credentials*
+*password*
+*secret*
+
+# 赞助者真实数据
+sponsors.json
+
+# SSL 证书和私钥
+*.pem
+*.key
+*.crt
+*.csr
+/etc/letsencrypt/
+
+# ============= 数据库 =============
+# 数据库备份
+*.sql
+*.sql.gz
+*.dump
+*.db
+*.sqlite
+*.sqlite3
+
+# ============= Node.js =============
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.npm
+.eslintcache
+
+# ============= Python =============
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# ============= 日志文件 =============
+*.log
+logs/
+*.log.*
+/var/log/
+
+# ============= 备份文件 =============
+*.bak
+*.backup
+*.old
+*.orig
+*~
+backup/
+backups/
+*.tar.gz
+*.zip
+*.rar
+
+# ============= 临时文件 =============
+*.tmp
+*.temp
+tmp/
+temp/
+.cache/
+
+# ============= 系统文件 =============
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# ============= IDE 配置 =============
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# ============= PM2 =============
+.pm2/
+pm2.log
+ecosystem.config.js
+
+# ============= 个人配置 =============
+# 个人 Nginx 配置（带真实域名和证书路径）
+/etc/nginx/sites-enabled/mirror.conf
+/etc/nginx/sites-enabled/violetteam.conf
+
+# 个人数据目录
+/var/www/mirror/api/pay.jpg
+/var/www/mirror/api/alipay.jpg
+
+# 测试文件
+test-*.js
+*-test.js
+test/
+tests/
+
+# ============= 其他 =============
+# Redis 数据
+*.rdb
+dump.rdb
+
+# 编译输出
+*.o
+*.a
+*.out
+
+# 部署相关（不推送真实部署脚本）
+deploy-production.sh
+production-*.sh
+
+# 个人笔记
+NOTES.md
+TODO.md
+PRIVATE.md
+

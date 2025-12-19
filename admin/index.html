@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>站长后台 - Mirror 加速站</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/user/user.css" />
+  <style>
+    .admin-layout {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 16px 40px;
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .admin-title {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .admin-subtitle {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .orders-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .orders-table th,
+    .orders-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .orders-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #4b5563;
+    }
+    .orders-table td.mono {
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 12px;
+    }
+    .status-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status-paid {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .status-expired,
+    .status-cancelled {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+    .admin-filters {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .admin-filters select {
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 4px 10px;
+      font-size: 13px;
+      background: #fff;
+    }
+    .text-muted {
+      color: #6b7280;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar glass">
+    <div class="logo">
+      <a href="/" style="text-decoration: none; color: inherit;">
+        <div class="logo-title">YLJD 加速站</div>
+        <div class="logo-sub">站长后台</div>
+      </a>
+    </div>
+    <nav class="nav-links">
+      <a href="/#/github">GitHub</a>
+      <a href="/#/docker">Docker</a>
+      <a href="/#/download">文件下载</a>
+      <a href="/#/email">临时邮箱</a>
+      <a href="/#/sponsors">感谢名单</a>
+      <a href="/">返回前台</a>
+    </nav>
+  </header>
+
+  <main class="admin-layout">
+    <section class="card glass">
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">为爱发电模式</h1>
+          <p class="admin-subtitle">管理员：<span id="admin-email" class="mono">检测中...</span></p>
+        </div>
+      </div>
+
+      <div style="padding: 40px;">
+        <h2 style="font-size: 24px; margin-bottom: 20px; color: var(--text); text-align: center;">为爱发电模式</h2>
+        <p style="font-size: 16px; line-height: 1.8; color: var(--text); max-width: 700px; margin: 0 auto 30px; text-align: left;">
+          本站所有功能完全免费开放，无流量限制、无速度限制。<br>
+          不再提供付费套餐，订单管理功能已停用。<br><br>
+          本站的开发和维护需要大量时间和精力投入，服务器、域名、带宽等运营成本每月需要几百元。<br>
+          如果您觉得本站好用，可以赞助我，您的支持是我继续开发和维护的动力。<br>
+          哪怕十块钱也可以，每一份支持都是对我工作的认可。
+        </p>
+        
+        <div style="text-align: center; margin-top: 35px; display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+          <div style="display: inline-block; padding: 16px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <img src="/pay.jpg" alt="微信赞助码" style="width: 160px; height: 160px; display: block;" />
+            <p style="margin-top: 10px; font-size: 13px; color: #666;">微信扫码</p>
+          </div>
+          <div style="display: inline-block; padding: 16px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <img src="/alipay.jpg" alt="支付宝赞助码" style="width: 160px; height: 160px; display: block;" />
+            <p style="margin-top: 10px; font-size: 13px; color: #666;">支付宝扫码</p>
+          </div>
+        </div>
+        
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 24px; text-align: center;">
+          感谢每一位赞助者的支持
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = '/api';
+
+    function getToken() {
+      try {
+        return localStorage.getItem('mirror_token') || '';
+      } catch (e) {
+        return '';
+      }
+    }
+
+    async function apiRequest(path, options = {}) {
+      const token = getToken();
+      const headers = Object.assign(
+        { 'Content-Type': 'application/json' },
+        options.headers || {}
+      );
+      if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+      }
+
+      const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || '请求失败');
+      }
+      return data;
+    }
+
+    async function initAdmin() {
+      try {
+        const profile = await apiRequest('/user/profile');
+        document.getElementById('admin-email').textContent = profile.user.email || '(未知)';
+      } catch (err) {
+        document.getElementById('admin-email').textContent = '未登录';
+        showNotify('请先登录管理员账号', 'warning');
+      }
+    }
+
+    // 通知模态框
+    function showNotify(message, type = 'info') {
+      const modal = document.getElementById('notify-modal');
+      const icon = document.getElementById('notify-icon');
+      const msg = document.getElementById('notify-message');
+      
+      const icons = {
+        success: '[成功]',
+        error: '[错误]',
+        warning: '[警告]',
+        info: '[提示]'
+      };
+      icon.textContent = icons[type] || icons.info;
+      icon.style.fontSize = '20px';
+      icon.style.fontWeight = 'bold';
+      msg.textContent = message;
+      modal.style.display = 'flex';
+    }
+
+    function closeNotifyModal() {
+      const modal = document.getElementById('notify-modal');
+      modal.style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', initAdmin);
+  </script>
+
+  <!-- 通知模态框 -->
+  <div id="notify-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content glass" style="max-width: 400px;">
+      <button class="modal-close" onclick="closeNotifyModal()" aria-label="关闭">×</button>
+      <div style="text-align: center; padding: 8px 0;">
+        <div id="notify-icon" style="font-size: 48px; margin-bottom: 16px;"></div>
+        <div id="notify-message" style="font-size: 16px; color: var(--text); line-height: 1.5;"></div>
+        <div style="margin-top: 24px;">
+          <button class="btn primary" onclick="closeNotifyModal()">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+

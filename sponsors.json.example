@@ -1,0 +1,27 @@
+{
+  "domainSponsors": [
+    {
+      "name": "示例用户1",
+      "domain": "example.com",
+      "date": "2025-01"
+    },
+    {
+      "name": "示例用户2",
+      "domain": "test.xyz",
+      "date": "2025-02"
+    }
+  ],
+  "moneySponsors": [
+    {
+      "name": "示例用户3",
+      "amount": "¥50",
+      "date": "2025-01"
+    },
+    {
+      "name": "示例用户4",
+      "amount": "¥100",
+      "date": "2025-02"
+    }
+  ]
+}
+

@@ -1,0 +1,40 @@
+{
+  "name": "YLJD 文件加速下载",
+  "description": "仅提供 GitHub Release 文件加速下载功能。",
+  "version": "0.2.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "declarativeNetRequest",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://github.com/*",
+    "*://raw.githubusercontent.com/*",
+    "*://avatars.githubusercontent.com/*",
+    "*://assets.github.com/*",
+    "*://github.githubassets.com/*",
+    "*://api.github.com/*",
+    "*://mirror.yljdteam.com/*",
+    "https://violetteam.cloud:9090/*",
+    "http://violetteam.cloud:9090/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mirror.yljdteam.com/*",
+        "https://github.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {}
+}
+

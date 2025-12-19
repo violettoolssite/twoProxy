@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>用户中心 - Mirror 加速站</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/user/user.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="navbar glass">
+  <div class="logo">
+    <a href="/" style="text-decoration: none; color: inherit;">
+      <div class="logo-title">YLJD 加速站</div>
+      <div class="logo-sub">面向国内的访问与下载优化</div>
+    </a>
+  </div>
+  <nav class="nav-links">
+    <a href="/#/github" id="nav-github">GitHub</a>
+    <a href="/#/docker" id="nav-docker">Docker</a>
+    <a href="/#/download" id="nav-download">文件下载</a>
+    <a href="/#/email" id="nav-email">临时邮箱</a>
+    <a href="/#/sponsors" id="nav-sponsors">感谢名单</a>
+    <a href="/user/" id="nav-user" class="btn-login">登录 / 注册</a>
+  </nav>
+</header>
+
+<main class="page-layout user-layout">
+  <!-- 未登录状态 -->
+  <section id="auth-section" class="cards" style="display: none;">
+    <div class="card glass auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">登录</button>
+        <button class="auth-tab" data-tab="register">注册</button>
+      </div>
+
+      <!-- 登录表单 -->
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-email">邮箱</label>
+          <input type="email" id="login-email" placeholder="请输入邮箱" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">密码</label>
+          <input type="password" id="login-password" placeholder="请输入密码" required />
+        </div>
+        <button type="submit" class="btn primary full-width">登录</button>
+        <div class="form-links">
+          <a href="#" onclick="showForgotPassword(); return false;">忘记密码？</a>
+        </div>
+        <div id="login-error" class="form-error"></div>
+      </form>
+
+      <!-- 忘记密码表单 -->
+      <form id="forgot-form" class="auth-form" style="display: none;">
+        <p class="form-desc">输入注册邮箱，我们将发送密码重置链接</p>
+        <div class="form-group">
+          <label for="forgot-email">邮箱</label>
+          <input type="email" id="forgot-email" placeholder="请输入注册邮箱" required />
+        </div>
+        <button type="submit" class="btn primary full-width">发送重置链接</button>
+        <div class="form-links">
+          <a href="#" onclick="showLoginForm(); return false;">返回登录</a>
+        </div>
+        <div id="forgot-error" class="form-error"></div>
+        <div id="forgot-success" class="form-success"></div>
+      </form>
+
+      <!-- 注册表单 -->
+      <form id="register-form" class="auth-form" style="display: none;">
+        <div class="form-group">
+          <label for="reg-email">邮箱</label>
+          <input type="email" id="reg-email" placeholder="请输入邮箱" required />
+        </div>
+        <div class="form-group">
+          <label for="reg-nickname">昵称（可选）</label>
+          <input type="text" id="reg-nickname" placeholder="请输入昵称" />
+        </div>
+        <div class="form-group">
+          <label for="reg-password">密码</label>
+          <input type="password" id="reg-password" placeholder="至少8位，包含字母和数字" required />
+        </div>
+        <div class="form-group">
+          <label for="reg-password2">确认密码</label>
+          <input type="password" id="reg-password2" placeholder="请再次输入密码" required />
+        </div>
+        <div class="form-group">
+          <label for="reg-invite">邀请码（可选）</label>
+          <input type="text" id="reg-invite" placeholder="如有邀请码请填写" />
+        </div>
+        <button type="submit" class="btn primary full-width">注册</button>
+        <div id="register-error" class="form-error"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- 已登录状态 - 仪表盘 -->
+  <section id="dashboard-section" class="cards" style="display: none;">
+    <!-- 用户概览卡片 -->
+    <div class="card glass">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">欢迎回来</p>
+          <h2 id="user-nickname">加载中...</h2>
+        </div>
+        <div class="user-header-actions">
+          <span class="tag green">免费开放</span>
+          <button class="btn ghost small" onclick="switchAccount()">切换用户</button>
+          <button class="btn ghost danger small" onclick="logout()">退出登录</button>
+        </div>
+      </div>
+      
+      <div class="user-stats">
+        <div class="stat-item">
+          <div class="stat-label">本月使用流量</div>
+          <div class="stat-value" id="traffic-used">0 GB</div>
+          <div class="stat-sub" style="color: var(--text-muted);">无限制</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">本月请求次数</div>
+          <div class="stat-value" id="requests-count">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">服务模式</div>
+          <div class="stat-value" style="font-size: 18px;">免费开放</div>
+        </div>
+      </div>
+
+      <div style="padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 4px solid #3b82f6;">
+        <p style="font-size: 14px; line-height: 1.6; color: var(--text);">
+          <strong>本站完全免费开放！</strong> 无流量限制、无速度限制、无任何付费套餐。<br>
+          如果您觉得本站好用，欢迎通过下方赞助支持开发和运营。
+        </p>
+      </div>
+    </div>
+
+    <!-- 子域名设置 -->
+    <div class="card glass">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">专属加速域名</p>
+          <h2>子域名设置</h2>
+        </div>
+      </div>
+      
+      <div id="subdomain-section">
+        <div id="subdomain-display" style="display: none;">
+          <p class="subdomain-url">
+            当前子域名：<a id="subdomain-link" href="#" target="_blank" class="mono"></a>
+          </p>
+          <button class="btn ghost" onclick="showSubdomainEdit()">更换子域名</button>
+        </div>
+        
+        <div id="subdomain-edit">
+          <div class="subdomain-input-row">
+            <span class="subdomain-prefix">https://</span>
+            <input type="text" id="subdomain-input" placeholder="yourname" maxlength="20" />
+            <span class="subdomain-suffix">.mirror.yljdteam.com</span>
+          </div>
+          <p class="hint">3-20 位字母数字，以字母开头，设置后可用于独享加速服务</p>
+          <button class="btn primary" onclick="saveSubdomain()">保存子域名</button>
+          <div id="subdomain-error" class="form-error"></div>
+        </div>
+        
+        <div id="subdomain-upgrade" style="display: none;">
+          <p class="hint">所有用户均可免费使用独立子域名功能</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 邀请码 -->
+    <div class="card glass">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">分享有礼</p>
+          <h2>我的邀请码</h2>
+        </div>
+      </div>
+      
+      <div class="card-content">
+        <p style="font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 16px;">
+          通过您的邀请码注册的用户，你们将会成为同一个团队的成员，享受团队协作、数据共享等更多功能。
+        </p>
+        
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+          <input type="text" id="invite-code-input" class="input" readonly style="flex: 1; font-family: monospace; font-size: 16px; font-weight: bold; letter-spacing: 1px;" />
+          <button class="btn primary" onclick="copyInviteCode()">复制邀请码</button>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-top: 20px;">
+          <div style="padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #3b82f6;" id="invited-count">0</div>
+            <div style="font-size: 12px; color: var(--text); margin-top: 4px;">已邀请用户</div>
+          </div>
+          <div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #10b981;" id="team-members-count">0</div>
+            <div style="font-size: 12px; color: var(--text); margin-top: 4px;">团队成员</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 16px; background: rgba(250, 204, 21, 0.1); border-radius: 8px; border-left: 4px solid #facc15;">
+          <p style="font-size: 13px; line-height: 1.6; color: var(--text);">
+            <strong>邀请链接：</strong><br>
+            <code id="invite-link" style="font-size: 12px; word-break: break-all;"></code>
+          </p>
+          <button class="btn ghost" onclick="copyInviteLink()" style="margin-top: 8px; width: 100%;">复制邀请链接</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 团队成员 -->
+    <div class="card glass" id="team-members-card">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">团队协作</p>
+          <h2>团队成员活动</h2>
+        </div>
+      </div>
+      
+      <div class="card-content">
+        <p style="font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 16px;">
+          查看团队成员最近的使用情况，包括GitHub项目、Docker镜像和文件下载。
+        </p>
+        
+        <div id="team-members-list">
+          <div style="text-align: center; padding: 40px 0; color: var(--text-muted);">
+            加载中...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div class="card glass">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">开发者接口</p>
+          <h2>API Key</h2>
+        </div>
+      </div>
+      
+      <div class="api-key-section">
+        <div class="api-key-display">
+          <input type="password" id="api-key-input" readonly />
+          <button class="btn ghost" onclick="toggleApiKey()">显示</button>
+          <button class="btn ghost" onclick="copyApiKey()">复制</button>
+        </div>
+        <button class="btn ghost" onclick="refreshApiKey()">刷新 API Key</button>
+        <p class="hint">API Key 用于程序调用，请妥善保管，不要泄露给他人</p>
+      </div>
+    </div>
+
+    <!-- 赞助支持 -->
+    <div class="card glass" id="sponsor">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">支持本站</p>
+          <h2>赞助开发者</h2>
+        </div>
+      </div>
+      
+      <div style="padding: 32px; max-width: 700px; margin: 0 auto;">
+        <p style="font-size: 15px; line-height: 2; color: var(--text); margin-bottom: 28px; text-align: left;">
+          本站的开发和维护需要大量时间和精力投入，服务器、域名、带宽等运营成本每月需要几百元。<br><br>
+          如果您觉得本站好用，可以赞助我，您的支持是我继续开发和维护的动力。<br>
+          哪怕十块钱也可以，每一份支持都是对我工作的认可。
+        </p>
+        
+        <div style="text-align: center; display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+          <div style="display: inline-block; padding: 16px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <img src="/pay.jpg" alt="微信赞助码" style="width: 180px; height: 180px; display: block;" />
+            <p style="margin-top: 10px; font-size: 13px; color: #666;">微信扫码</p>
+          </div>
+          <div style="display: inline-block; padding: 16px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <img src="/alipay.jpg" alt="支付宝赞助码" style="width: 180px; height: 180px; display: block;" />
+            <p style="margin-top: 10px; font-size: 13px; color: #666;">支付宝扫码</p>
+          </div>
+        </div>
+        
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 24px; text-align: center;">
+          感谢每一位赞助者的支持
+        </p>
+      </div>
+    </div>
+
+    <!-- 流量统计 -->
+    <div class="card glass">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">使用统计</p>
+          <h2>近 30 天流量</h2>
+        </div>
+      </div>
+      
+      <div class="chart-container">
+        <canvas id="traffic-chart"></canvas>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="disclaimer-footer">
+  <div class="disclaimer-content">
+    <p>© 2024 Mirror 加速站 · <a href="/">返回首页</a></p>
+  </div>
+</footer>
+
+<!-- 通知模态框 -->
+<div id="notify-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content glass" style="max-width: 400px;">
+    <button class="modal-close" onclick="closeNotifyModal()" aria-label="关闭">×</button>
+    <div style="text-align: center; padding: 8px 0;">
+      <div id="notify-icon" style="font-size: 48px; margin-bottom: 16px;"></div>
+      <div id="notify-message" style="font-size: 16px; color: var(--text); line-height: 1.5;"></div>
+      <div style="margin-top: 24px;">
+        <button class="btn primary" onclick="closeNotifyModal()">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/user/user.js"></script>
+</body>
+</html>
+

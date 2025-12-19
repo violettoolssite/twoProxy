@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>YLJD 加速设置</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>YLJD 文件加速下载</h1>
+    <p class="desc">仅提供 GitHub Release 文件加速下载功能。</p>
+    <a href="https://mirror.yljdteam.com" target="_blank" class="site-link">访问加速站主页</a>
+
+    <label class="field">
+      <span>Release 加速前缀（例如：https://violetteam.cloud/ghproxy/github）</span>
+      <input id="releaseBase" placeholder="https://violetteam.cloud/ghproxy/github" />
+    </label>
+
+    <div class="toggles">
+      <label><input type="checkbox" id="enableRelease" /> 启用 Release 文件加速下载</label>
+    </div>
+
+    <div class="actions">
+      <button id="saveBtn">保存并应用</button>
+      <button id="resetBtn" class="ghost">恢复默认</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

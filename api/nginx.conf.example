@@ -1,0 +1,236 @@
+# ============================================================
+# Mirror 加速站 Nginx 配置示例
+# 包含：通配符子域名支持、API 代理、auth_request 鉴权
+# ============================================================
+
+# ============ 通配符子域名服务器块 ============
+# 处理所有 *.mirror.yljdteam.com 的请求
+server {
+    listen 443 ssl http2;
+    server_name ~^(?<subdomain>[a-z][a-z0-9]{2,19})\.mirror\.yljdteam\.com$;
+
+    # 通配符 SSL 证书
+    ssl_certificate     /etc/letsencrypt/live/mirror.yljdteam.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mirror.yljdteam.com/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache   shared:SSL:50m;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # 日志
+    access_log /var/log/nginx/mirror-subdomain.access.log;
+    error_log  /var/log/nginx/mirror-subdomain.error.log;
+
+    # -------- 鉴权（通过后端 API 验证子域名和流量）--------
+    location = /_auth {
+        internal;
+        proxy_pass http://127.0.0.1:3000/api/internal/auth;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header X-Subdomain $subdomain;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 5s;
+    }
+
+    # -------- GitHub 仓库代理 --------
+    location ~ ^/([^/]+/[^/]+)(/.*)?$ {
+        auth_request /_auth;
+        auth_request_set $auth_user $upstream_http_x_user_id;
+        auth_request_set $auth_plan $upstream_http_x_plan;
+        auth_request_set $auth_limit $upstream_http_x_rate_limit;
+
+        # 根据套餐限速
+        limit_rate $auth_limit;
+
+        set $owner_repo $1;
+        set $sub_path $2;
+        if ($sub_path = "") {
+            set $sub_path "/";
+        }
+
+        # 排除非 GitHub 路径
+        if ($owner_repo ~ ^(css|js|file|assets|api|user|_next|static|favicon\.ico|gh|v2)) {
+            break;
+        }
+
+        proxy_pass https://github.com/$owner_repo$sub_path$is_args$args;
+        proxy_set_header Host github.com;
+        proxy_set_header User-Agent $http_user_agent;
+        proxy_set_header Accept $http_accept;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_ssl_server_name on;
+        proxy_buffering on;
+        proxy_buffer_size 32k;
+        proxy_buffers 16 32k;
+        proxy_busy_buffers_size 64k;
+        proxy_http_version 1.1;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+
+        # 移除 GitHub CSP
+        proxy_hide_header Content-Security-Policy;
+        proxy_hide_header X-Content-Security-Policy;
+        add_header Content-Security-Policy "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;" always;
+    }
+
+    # -------- 通用文件代理 --------
+    location ~ ^/file/(https?)/(.+)$ {
+        auth_request /_auth;
+        auth_request_set $auth_limit $upstream_http_x_rate_limit;
+        limit_rate $auth_limit;
+
+        set $proto $1;
+        set $target $2;
+        
+        proxy_pass $proto://$target$is_args$args;
+        proxy_set_header Host $proxy_host;
+        proxy_set_header User-Agent $http_user_agent;
+        proxy_set_header Accept $http_accept;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_ssl_server_name on;
+        proxy_buffering on;
+        proxy_http_version 1.1;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    # -------- 静态文件 --------
+    location / {
+        root /var/www/mirror;
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+# ============ 主域名服务器块 ============
+# 处理 mirror.yljdteam.com 的请求（公共访问，免费版限制）
+server {
+    listen 443 ssl http2;
+    server_name mirror.yljdteam.com ai.yljdteam.com;
+
+    ssl_certificate     /etc/letsencrypt/live/mirror.yljdteam.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mirror.yljdteam.com/privkey.pem;
+
+    root /var/www/mirror;
+    index index.html;
+
+    # 全局限速（免费用户：5 Mbps = 625 KB/s）
+    limit_rate 625k;
+    
+    # 并发连接限制
+    limit_conn_zone $binary_remote_addr zone=free_conn:10m;
+    limit_conn free_conn 5;
+
+    # -------- API 代理 --------
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # -------- 用户中心 --------
+    location /user/ {
+        try_files $uri $uri/ /user/index.html;
+    }
+
+    # -------- GitHub 搜索 API 代理 --------
+    location ~ ^/gh/search/(.+)$ {
+        proxy_pass https://api.github.com/search/$1$is_args$args;
+        proxy_set_header Host api.github.com;
+        proxy_set_header User-Agent "Mirror-Proxy/1.0";
+        proxy_set_header Accept "application/vnd.github.v3+json";
+        proxy_ssl_server_name on;
+        add_header Access-Control-Allow-Origin * always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type" always;
+    }
+
+    # -------- Docker Registry API --------
+    location /v2/ {
+        proxy_pass https://mirror.ccs.tencentyun.com;
+        proxy_set_header Host mirror.ccs.tencentyun.com;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_ssl_server_name on;
+        proxy_buffering off;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # -------- 通用文件代理 --------
+    location ~ ^/file/(https?)/(.+)$ {
+        set $proto $1;
+        set $target $2;
+        
+        proxy_pass $proto://$target$is_args$args;
+        proxy_set_header Host $proxy_host;
+        proxy_set_header User-Agent $http_user_agent;
+        proxy_set_header Accept $http_accept;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_ssl_server_name on;
+        proxy_buffering on;
+        proxy_http_version 1.1;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    # -------- GitHub 仓库代理 --------
+    location ~ ^/([^/]+/[^/]+)(/.*)?$ {
+        set $owner_repo $1;
+        set $sub_path $2;
+        if ($sub_path = "") {
+            set $sub_path "/";
+        }
+
+        if ($owner_repo ~ ^(css|js|file|assets|api|user|_next|static|favicon\.ico|gh|v2)) {
+            break;
+        }
+
+        proxy_pass https://github.com/$owner_repo$sub_path$is_args$args;
+        proxy_set_header Host github.com;
+        proxy_set_header User-Agent $http_user_agent;
+        proxy_set_header Accept $http_accept;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_ssl_server_name on;
+        proxy_buffering on;
+        proxy_buffer_size 32k;
+        proxy_buffers 16 32k;
+        proxy_http_version 1.1;
+
+        proxy_hide_header Content-Security-Policy;
+        add_header Content-Security-Policy "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;" always;
+    }
+
+    # -------- 静态文件 --------
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+# ============ HTTP 重定向到 HTTPS ============
+server {
+    listen 80;
+    server_name mirror.yljdteam.com *.mirror.yljdteam.com ai.yljdteam.com;
+    return 301 https://$host$request_uri;
+}
+

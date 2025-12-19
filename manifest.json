@@ -1,0 +1,21 @@
+{
+  "name": "Mirror 加速站",
+  "short_name": "Mirror",
+  "description": "面向国内的统一加速入口 - GitHub / Docker / 文件下载加速",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["developer", "utilities"],
+  "lang": "zh-CN",
+  "dir": "ltr"
+}
+

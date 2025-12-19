@@ -1,0 +1,15 @@
+# VioletTeam 广州服务器 - Python 依赖
+# 
+# GitHub 代理服务依赖
+# 安装方式: pip3 install -r requirements.txt
+
+Flask==3.0.0
+Werkzeug==3.0.1
+requests==2.31.0
+
+# 可选：性能优化
+gunicorn==21.2.0
+
+# 可选：监控和日志
+python-dotenv==1.0.0
+

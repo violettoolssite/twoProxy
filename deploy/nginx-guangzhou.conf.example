@@ -1,0 +1,92 @@
+server {
+    listen 80;
+    server_name violetteam.cloud;
+
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name violetteam.cloud;
+
+    ssl_certificate     /etc/letsencrypt/live/violetteam.cloud/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/violetteam.cloud/privkey.pem;
+
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # 安全相关 HTTP 头
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    # 前端静态资源
+    root /var/www/violetteam/dist;
+    index index.html;
+
+    # SPA 前端路由
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # 后端 API 反代
+    location /api/ {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
+    # Docker Registry 镜像加速（HTTPS 443）
+    location /v2/ {
+        proxy_pass https://mirror.ccs.tencentyun.com;
+        proxy_set_header Host mirror.ccs.tencentyun.com;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        proxy_buffering off;
+    }
+
+    # GitHub 代理（原来 9090 -> 现在挂在 /ghproxy/ 下）
+    # 访问示例：https://violetteam.cloud/ghproxy/xxxxx
+    location /ghproxy/ {
+        access_log off;
+
+        # 末尾带 /，把 /ghproxy/ 前缀去掉转发到 Python 服务
+        proxy_pass http://127.0.0.1:18080/;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_buffering off;
+        proxy_request_buffering off;
+
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    # 健康检查接口（可选）
+    location /health {
+        return 200 'Docker Registry Proxy\nStatus: OK\n';
+        add_header Content-Type text/plain;
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_vary on;
+}
+
