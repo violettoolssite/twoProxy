@@ -309,42 +309,62 @@ router.get('/get-message', async (req, res) => {
     }
 
     // 尝试使用对接码获取验证码（尝试所有对接码）
-    let response;
-    let lastError = null;
+    let response = null;
+    let success = false;
     
-    for (const uid of CURSOR_DOCKING_CODES) {
+    // 如果是Cursor项目，尝试使用对接码
+    if (actualSid === '78720') {
+      for (const uid of CURSOR_DOCKING_CODES) {
+        try {
+          response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+            params: {
+              api: 'getMessage',
+              token: token,
+              sid: actualSid,
+              uid: uid,
+              phone: phone
+            },
+            timeout: 10000
+          });
+          
+          // 如果成功，跳出循环
+          if (response && response.data && (response.data.code === 0 || response.data.code === '0' || response.data.code === 200)) {
+            success = true;
+            break;
+          }
+        } catch (error) {
+          // 继续尝试下一个对接码
+          continue;
+        }
+      }
+    }
+
+    // 如果对接码都失败，或不使用对接码，尝试不使用对接码
+    if (!success) {
       try {
         response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
           params: {
             api: 'getMessage',
             token: token,
             sid: actualSid,
-            uid: uid,
             phone: phone
           },
           timeout: 10000
         });
-        
-        // 如果成功，跳出循环
-        if (response.data.code === 0 || response.data.code === '0' || response.data.code === 200) {
-          break;
-        }
       } catch (error) {
-        lastError = error;
-        continue;
+        console.error('获取验证码失败:', error.message);
+        return res.json({
+          success: false,
+          message: error.message || '获取验证码失败'
+        });
       }
     }
 
-    // 如果所有对接码都失败，尝试不使用对接码
-    if (!response || (response.data.code !== 0 && response.data.code !== '0' && response.data.code !== 200)) {
-      response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
-        params: {
-          api: 'getMessage',
-          token: token,
-          sid: actualSid,
-          phone: phone
-        },
-        timeout: 10000
+    // 确保response存在
+    if (!response || !response.data) {
+      return res.json({
+        success: false,
+        message: '获取验证码失败：无响应数据'
       });
     }
 
@@ -395,42 +415,62 @@ router.post('/release-phone', authenticate, async (req, res) => {
     }
 
     // 尝试使用对接码释放号码（尝试所有对接码）
-    let response;
-    let lastError = null;
+    let response = null;
+    let success = false;
     
-    for (const uid of CURSOR_DOCKING_CODES) {
+    // 如果是Cursor项目，尝试使用对接码
+    if (actualSid === '78720') {
+      for (const uid of CURSOR_DOCKING_CODES) {
+        try {
+          response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+            params: {
+              api: 'cancelRecv',
+              token: token,
+              sid: actualSid,
+              uid: uid,
+              phone: phone
+            },
+            timeout: 10000
+          });
+          
+          // 如果成功，跳出循环
+          if (response && response.data && (response.data.code === 0 || response.data.code === '0' || response.data.code === 200)) {
+            success = true;
+            break;
+          }
+        } catch (error) {
+          // 继续尝试下一个对接码
+          continue;
+        }
+      }
+    }
+
+    // 如果对接码都失败，或不使用对接码，尝试不使用对接码
+    if (!success) {
       try {
         response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
           params: {
             api: 'cancelRecv',
             token: token,
             sid: actualSid,
-            uid: uid,
             phone: phone
           },
           timeout: 10000
         });
-        
-        // 如果成功，跳出循环
-        if (response.data.code === 0 || response.data.code === '0' || response.data.code === 200) {
-          break;
-        }
       } catch (error) {
-        lastError = error;
-        continue;
+        console.error('释放手机号失败:', error.message);
+        return res.json({
+          success: false,
+          message: error.message || '释放手机号失败'
+        });
       }
     }
 
-    // 如果所有对接码都失败，尝试不使用对接码
-    if (!response || (response.data.code !== 0 && response.data.code !== '0' && response.data.code !== 200)) {
-      response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
-        params: {
-          api: 'cancelRecv',
-          token: token,
-          sid: actualSid,
-          phone: phone
-        },
-        timeout: 10000
+    // 确保response存在
+    if (!response || !response.data) {
+      return res.json({
+        success: false,
+        message: '释放手机号失败：无响应数据'
       });
     }
 
