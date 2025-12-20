@@ -92,7 +92,11 @@ twoProxy/
 ├── scripts/                # 自动化脚本
 │   ├── deploy.sh          # 一键部署脚本
 │   ├── backup.sh          # 自动备份脚本
-│   └── restore.sh         # 数据恢复脚本
+│   ├── restore.sh         # 数据恢复脚本
+│   ├── migrate-all.sh     # 一键迁移脚本（推荐）
+│   ├── migrate-backup.sh  # 备份旧服务器
+│   ├── migrate-restore.sh # 恢复到新服务器
+│   └── migrate-verify.sh  # 验证迁移结果
 ├── cloudflare-email-worker.js  # Cloudflare Worker（邮箱服务）
 ├── sponsors.json.example       # 感谢名单数据示例
 ├── DEPLOYMENT.md               # 完整部署文档
@@ -163,6 +167,41 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
+## 🔄 服务器迁移
+
+### ⚡ 一键迁移（推荐）
+
+如果需要将现有服务迁移到新服务器，使用我们的一键迁移脚本：
+
+```bash
+cd /var/www/mirror/scripts
+bash migrate-all.sh
+```
+
+交互式向导将引导您完成：
+1. 选择迁移模式（单服务器/双服务器/合并部署）
+2. 自动备份旧服务器数据
+3. 传输并恢复到新服务器
+4. 自动验证迁移结果
+
+### 📋 迁移脚本
+
+| 脚本 | 功能 | 使用场景 |
+|------|------|----------|
+| `migrate-all.sh` | 一键完整迁移 | 最简单，推荐使用 |
+| `migrate-backup.sh` | 备份旧服务器 | 手动分步操作 |
+| `migrate-restore.sh` | 恢复到新服务器 | 手动分步操作 |
+| `migrate-verify.sh` | 验证迁移结果 | 测试新服务器 |
+
+### 📖 详细迁移文档
+
+- ⚡ **[MIGRATION_QUICK_START.md](MIGRATION_QUICK_START.md)** - 5分钟快速迁移指南（必读）
+- 📋 [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md) - 迁移前后完整检查清单
+- 🔧 [TWO_SERVER_MIGRATION.md](TWO_SERVER_MIGRATION.md) - 双服务器迁移方案
+- 📄 [DEPLOYMENT.md](DEPLOYMENT.md) - 完整部署和迁移参考
+
+---
+
 ## 📚 文档索引
 
 本项目提供完整的文档体系，涵盖部署、开发、功能和管理等各个方面。
@@ -173,6 +212,7 @@ sudo nginx -t && sudo systemctl reload nginx
 |------|------|---------|
 | [DEPLOYMENT.md](DEPLOYMENT.md) | 完整部署指南 | 单服务器从零部署 |
 | [TWO_SERVER_MIGRATION.md](TWO_SERVER_MIGRATION.md) | 双服务器部署和迁移 | 生产环境高可用部署 |
+| [MIGRATION_QUICK_START.md](MIGRATION_QUICK_START.md) | **⚡ 快速迁移指南** | **服务器迁移必读** |
 | [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md) | 迁移检查清单 | 服务器迁移前核对 |
 | [deploy/GUANGZHOU_DEPLOYMENT.md](deploy/GUANGZHOU_DEPLOYMENT.md) | 广州服务器专用文档 | 加速节点部署 |
 
