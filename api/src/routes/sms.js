@@ -152,13 +152,14 @@ router.get('/projects', async (req, res) => {
  * 获取手机号
  * 参数：
  * - sid: 项目ID (必需)
+ * - phone: 指定手机号 (可选，如果指定则获取该号码)
  * - isp: 运营商 (可选, 1=移动, 2=联通, 3=电信)
  * - ascription: 号码类型 (可选, 1=只取类似, 2=只取实卡)
  * - province: 省份代码 (可选)
  */
 router.get('/get-phone', authenticate, async (req, res) => {
   try {
-    const { sid, isp, ascription, province } = req.query;
+    const { sid, phone, isp, ascription, province } = req.query;
 
     if (!sid) {
       return res.json({
@@ -220,6 +221,11 @@ router.get('/get-phone', authenticate, async (req, res) => {
     // 如果指定了对接码，添加uid参数
     if (uid) {
       params.uid = uid;
+    }
+
+    // 如果指定了手机号，添加phone参数
+    if (phone) {
+      params.phone = phone;
     }
 
     // 用户可选参数

@@ -1499,11 +1499,21 @@ async function getPhoneNumber() {
     return;
   }
   
+  // 获取指定号码
+  const specifiedPhone = document.getElementById('sms-specified-phone').value.trim();
+  if (specifiedPhone && (specifiedPhone.length !== 11 || !/^[0-9]{11}$/.test(specifiedPhone))) {
+    showNotify('请输入正确的11位手机号', 'warning');
+    return;
+  }
+  
   const isp = document.getElementById('sms-isp').value;
   const type = document.getElementById('sms-type').value;
   
   try {
     const params = new URLSearchParams({ sid: projectId });
+    if (specifiedPhone) {
+      params.append('phone', specifiedPhone);
+    }
     if (isp) params.append('isp', isp);
     if (type) params.append('ascription', type);
     
@@ -1521,6 +1531,9 @@ async function getPhoneNumber() {
       document.getElementById('sms-phone-number').textContent = currentSmsPhone;
       document.getElementById('sms-phone-result').style.display = 'block';
       document.getElementById('sms-code-result').style.display = 'none';
+      
+      // 清空指定号码输入框
+      document.getElementById('sms-specified-phone').value = '';
       
       // 保存到历史
       saveSmsToHistory(currentSmsPhone, projectId);
