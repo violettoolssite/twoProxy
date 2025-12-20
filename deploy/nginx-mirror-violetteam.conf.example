@@ -1,31 +1,24 @@
-# Mirror 加速站 - 香港服务器 Nginx 配置
-# 域名: mirror.yljdteam.com, *.mirror.yljdteam.com, ai.yljdteam.com
+# Mirror 加速站 - mirror.violetteam.cloud 专用配置
+# 用于CDN配置后的域名访问
 # 
-# 功能:
-#   - 前端静态页面
-#   - 后端 API (Node.js, 端口 3000)
-#   - GitHub API 代理
-#   - Docker Hub 代理
-#   - 文件下载加速
-#   - 用户系统和管理后台
+# 功能: 与 mirror.yljdteam.com 相同的功能，但使用不同的域名
 #
 # 安装方式:
-#   sudo cp nginx-hongkong.conf.example /etc/nginx/sites-enabled/mirror.conf
+#   sudo cp nginx-mirror-violetteam.conf.example /etc/nginx/sites-enabled/mirror-violetteam.conf
 #   sudo nginx -t
 #   sudo systemctl reload nginx
 
 server {
     listen 443 ssl http2;
-    server_name mirror.yljdteam.com ai.yljdteam.com ~^(?<subdomain>[^.]+)\.mirror\.yljdteam\.com$;
+    server_name mirror.violetteam.cloud;
 
     root /var/www/mirror;
     index index.html;
     client_max_body_size 0;
 
-    # SSL 证书（通配符证书，支持 *.mirror.yljdteam.com）
-    # 请根据实际证书路径修改
-    ssl_certificate     /etc/letsencrypt/live/mirror.yljdteam.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/mirror.yljdteam.com/privkey.pem;
+    # SSL 证书
+    ssl_certificate     /etc/letsencrypt/live/mirror.violetteam.cloud/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mirror.violetteam.cloud/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -35,13 +28,13 @@ server {
 
     # ========= 首页 / 用户中心 / API =========
 
-    # 重置密码单独页面，避免被 /user/ 的 SPA 覆盖
+    # 重置密码单独页面
     location = /user/reset-password {
         root /var/www/mirror;
         try_files /user/reset-password.html =404;
     }
 
-    # 用户中心及相关子页面（登录 / 注册）
+    # 用户中心及相关子页面
     location ^~ /user/ {
         root /var/www/mirror;
         try_files $uri $uri/ /user/index.html;
@@ -53,7 +46,7 @@ server {
         try_files $uri $uri/ /admin/index.html;
     }
 
-    # 后端 API 代理（用户系统 / 订阅 / 支付）
+    # 后端 API 代理
     location ^~ /api/ {
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
@@ -92,100 +85,40 @@ server {
         proxy_set_header Host hub.docker.com;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header User-Agent "Docker-Client/25.0 (mirror.yljdteam.com)";
+        proxy_set_header User-Agent "Docker-Client/25.0 (mirror.violetteam.cloud)";
         proxy_set_header Accept "application/json";
         proxy_ssl_server_name on;
         proxy_http_version 1.1;
     }
 
-    # ========= Docker Hub 认证服务代理 =========
+    # ========= Docker Registry 认证代理 =========
     location ~ ^/docker-auth/(.+)$ {
         set $auth_path $1;
-        set $docker_auth_host "auth.docker.io";
-        proxy_pass https://$docker_auth_host/$auth_path$is_args$args;
-        proxy_set_header Host auth.docker.io;
+        proxy_pass https://auth.docker.io/$auth_path$is_args$args;
+        proxy_set_header Host auth.docker.com;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
         proxy_ssl_server_name on;
-        proxy_buffering off;
-        proxy_request_buffering off;
         proxy_http_version 1.1;
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
     }
 
-    # ========= Docker Registry v2 API 代理 =========
-    # 支持专属子域名: <subdomain>.mirror.yljdteam.com/v2/...
-    # 排除 /file/ 路径，避免误匹配文件代理请求
+    # ========= Docker Hub Registry 代理 =========
     location ~ ^(?!/file/)/v2/(.+)$ {
-        set $docker_path $1;
-        
-        # 用户验证：检查用户是否有有效的订阅
-        auth_request /api/internal/auth;
-        auth_request_set $user_id $upstream_http_x_user_id;
-        auth_request_set $user_plan $upstream_http_x_plan;
-        auth_request_set $auth_subdomain $subdomain;
-        
-        # 如果验证失败（403），返回错误
-        error_page 403 = @docker_auth_failed;
-        
-        # 代理到本地 Docker Registry（运行在 5000 端口）
-        proxy_pass http://127.0.0.1:5000/v2/$docker_path$is_args$args;
-        proxy_set_header Host $host;
+        set $registry_path $1;
+        proxy_pass https://registry-1.docker.io/v2/$registry_path$is_args$args;
+        proxy_set_header Host registry-1.docker.io;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Authorization $http_authorization;
+        proxy_ssl_server_name on;
         proxy_buffering off;
         proxy_request_buffering off;
         proxy_http_version 1.1;
         proxy_connect_timeout 60s;
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
-        
-        # 记录流量统计
-        post_action @docker_log_traffic;
-        
-        # 支持分块传输
-        chunked_transfer_encoding on;
-    }
-    
-    # Docker 认证接口（内部 location）
-    location = /api/internal/auth {
-        internal;
-        proxy_pass http://127.0.0.1:3000/api/internal/auth;
-        proxy_pass_request_body off;
-        proxy_set_header Content-Length "";
-        proxy_set_header Host $host;
-        proxy_set_header X-Subdomain $subdomain;
-        proxy_set_header X-Original-URI $request_uri;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-    
-    # Docker 认证失败处理
-    location @docker_auth_failed {
-        add_header Content-Type application/json;
-        return 403 '{"errors":[{"code":"UNAUTHORIZED","message":"需要有效的订阅才能使用 Docker 加速服务"}]}';
-    }
-    
-    # Docker 流量记录（内部 location）
-    location @docker_log_traffic {
-        internal;
-        if ($user_id = "") {
-            return 204;
-        }
-        
-        set $total_bytes $bytes_sent;
-        
-        proxy_pass http://127.0.0.1:3000/api/internal/log?user_id=$user_id&request_type=docker&bytes_transferred=$total_bytes&path=$docker_path&ip=$remote_addr;
-        proxy_set_header Host $host;
-        proxy_set_header Content-Length "";
-        proxy_pass_request_body off;
-        proxy_connect_timeout 1s;
-        proxy_send_timeout 1s;
-        proxy_read_timeout 1s;
-        access_log off;
     }
 
     # ========= 通用文件代理（HTTPS 源站）=========
@@ -204,17 +137,17 @@ server {
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
         proxy_pass https://$dst_host$dst_path$is_args$args;
-        proxy_redirect https://github.com/ https://mirror-download.yljdteam.com/github.com/;
     }
 
     # ========= GitHub 路径代理 =========
+    # 重要：排除更多路径，避免误匹配
     location ~ ^/([^/]+/[^/]+)(/.*)?$ {
         set $owner_repo $1;
         set $sub_path $2;
         if ($sub_path = "") {
             set $sub_path "/";
         }
-        # 排除已知的非 GitHub 路径（添加更多排除项，避免误匹配）
+        # 排除已知的非 GitHub 路径（添加更多排除项）
         if ($owner_repo ~ ^(css|js|file|assets|api|user|admin|_next|static|favicon\.ico|github|search|v2|gh|sponsors|hunshcn|gh-proxy|violetteam|mirror)) {
             break;
         }
@@ -241,7 +174,7 @@ server {
         add_header Content-Security-Policy "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src *; style-src * 'unsafe-inline'; img-src * data:; font-src * data:; frame-src *; object-src *; media-src *; worker-src * blob:;" always;
         sub_filter_types text/html;
         sub_filter_once off;
-        sub_filter 'script-src github.githubassets.com' 'script-src * unsafe-inline unsafe-eval github.githubassets.com *.yljdteam.com ai.yljdteam.com mirror.yljdteam.com';
+        sub_filter 'script-src github.githubassets.com' 'script-src * unsafe-inline unsafe-eval github.githubassets.com *.violetteam.cloud mirror.violetteam.cloud';
         sub_filter "connect-src 'self'" "connect-src * 'self'";
         sub_filter 'src="https://github.com/' 'src="/';
         sub_filter '<head>' '<head><script src="/js/release-fix.js"></script>';
@@ -252,81 +185,36 @@ server {
         try_files /index.html =404;
     }
 
-    # ========= 收款码静态文件 =========
-    location = /pay.jpg {
-        root /var/www/mirror/api;
-        try_files /pay.jpg =404;
-    }
-    
-    location = /alipay.jpg {
-        root /var/www/mirror/api;
-        try_files /alipay.jpg =404;
-    }
-
     # ========= 静态资源 =========
     location ^~ /css/ {
         access_log off;
         expires 7d;
+        add_header Cache-Control "public, max-age=604800";
         try_files $uri =404;
     }
 
     location ^~ /js/ {
         access_log off;
         expires 7d;
+        add_header Cache-Control "public, max-age=604800";
         try_files $uri =404;
     }
 
-    # ========= Ollama 专用 =========
-    location = /file/https/ollama.com/install.sh {
-        default_type text/x-sh;
-        root /var/www/mirror;
-        try_files /ollama-install.sh =404;
+    # ========= 其他静态文件 =========
+    location / {
+        try_files $uri $uri/ /index.html;
     }
 
-    # ========= 脚本代理 + 内容改写 =========
-    location ~ ^/file/https/([^/]+)(/.*\.sh)$ {
-        set $dst_host $1;
-        set $dst_path $2;
-
-        proxy_set_header Host $dst_host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_ssl_server_name on;
-        proxy_set_header Accept-Encoding "";
-
-        proxy_buffering off;
-        proxy_request_buffering off;
-        proxy_http_version 1.1;
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 300s;
-        proxy_read_timeout 300s;
-
-        proxy_pass https://$dst_host$dst_path$is_args$args;
-        proxy_redirect https://github.com/ https://mirror-download.yljdteam.com/github.com/;
-
-        sub_filter_once off;
-        sub_filter_types *;
-        sub_filter 'https://ollama.com/' 'https://mirror.yljdteam.com/file/https/ollama.com/';
-        sub_filter 'https://github.com/' 'https://mirror-download.yljdteam.com/github.com/';
-    }
-
-    # ========= GitHub Search API 代理 =========
-    location /gh/ {
-        rewrite ^/gh/(.*)$ /$1 break;
-        proxy_pass https://api.github.com;
-        proxy_set_header Host api.github.com;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_ssl_server_name on;
-        proxy_http_version 1.1;
-    }
+    # ========= 安全相关 HTTP 头 =========
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 }
 
-# HTTP 重定向到 HTTPS
+# ============ HTTP 重定向到 HTTPS ============
 server {
     listen 80;
-    server_name mirror.yljdteam.com ai.yljdteam.com ~^(?<subdomain>[^.]+)\.mirror\.yljdteam\.com$;
+    server_name mirror.violetteam.cloud;
     return 301 https://$host$request_uri;
 }
 
