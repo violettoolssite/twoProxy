@@ -7,12 +7,14 @@
   'use strict';
 
   // 视频背景列表（可以添加更多视频URL）
+  // 注意：这些是示例URL，实际使用时需要替换为可用的视频资源
+  // 可以从 anime-albums-website 仓库获取视频，或使用其他免费视频资源
   const videoSources = [
-    // 示例：使用一些免费的背景视频资源
-    // 实际使用时可以替换为您的视频URL
-    'https://cdn.jsdelivr.net/gh/tomcomtang/anime-albums-website@main/public/videos/bg1.mp4',
-    'https://cdn.jsdelivr.net/gh/tomcomtang/anime-albums-website@main/public/videos/bg2.mp4',
-    'https://cdn.jsdelivr.net/gh/tomcomtang/anime-albums-website@main/public/videos/bg3.mp4',
+    // 示例：使用 anime-albums-website 的视频（如果可用）
+    // 'https://raw.githubusercontent.com/tomcomtang/anime-albums-website/main/public/videos/bg1.mp4',
+    // 'https://raw.githubusercontent.com/tomcomtang/anime-albums-website/main/public/videos/bg2.mp4',
+    // 或者使用其他免费视频资源网站的视频
+    // 例如：Pexels Videos, Pixabay Videos 等
   ];
 
   // 备用背景（如果视频加载失败）
@@ -31,6 +33,13 @@
     videoElement = document.getElementById('bg-video');
     if (!videoElement) {
       console.warn('视频背景元素未找到');
+      useFallbackBackground();
+      return;
+    }
+
+    // 如果没有配置视频源，直接使用备用背景
+    if (videoSources.length === 0) {
+      useFallbackBackground();
       return;
     }
 
@@ -39,13 +48,13 @@
 
     // 视频播放结束后切换到下一个
     videoElement.addEventListener('ended', () => {
-      switchToNextVideo();
-    });
-
-    // 视频加载错误时使用备用背景
-    videoElement.addEventListener('error', () => {
-      console.warn('视频加载失败，使用备用背景');
-      useFallbackBackground();
+      if (videoSources.length > 1) {
+        switchToNextVideo();
+      } else {
+        // 如果只有一个视频，重新播放
+        videoElement.currentTime = 0;
+        videoElement.play();
+      }
     });
 
     // 视频加载成功
@@ -56,7 +65,13 @@
   }
 
   function loadVideo(index) {
-    if (!videoElement || index >= videoSources.length) {
+    if (!videoElement) {
+      useFallbackBackground();
+      return;
+    }
+
+    // 如果没有配置视频源，直接使用备用背景
+    if (videoSources.length === 0 || index >= videoSources.length) {
       useFallbackBackground();
       return;
     }
@@ -65,21 +80,19 @@
     isVideoLoaded = false;
     videoElement.style.opacity = '0';
 
-    // 检查视频URL是否可用
-    const testVideo = new Image();
-    testVideo.onload = () => {
-      videoElement.src = videoUrl;
-      videoElement.load();
-    };
-    testVideo.onerror = () => {
-      // 如果视频不可用，尝试下一个
+    // 直接尝试加载视频
+    videoElement.src = videoUrl;
+    videoElement.load();
+    
+    // 如果视频加载失败，尝试下一个或使用备用背景
+    videoElement.addEventListener('error', function onError() {
+      videoElement.removeEventListener('error', onError);
       if (index + 1 < videoSources.length) {
         loadVideo(index + 1);
       } else {
         useFallbackBackground();
       }
-    };
-    testVideo.src = videoUrl;
+    }, { once: true });
   }
 
   function switchToNextVideo() {
