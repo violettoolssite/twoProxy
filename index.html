@@ -13,8 +13,18 @@
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
   <title>Mirror 加速站</title>
   <link rel="stylesheet" href="./css/style.css?v=20250118" />
+  <!-- Live2D Widget -->
+  <script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@latest/autoload.js"></script>
+  <script src="./js/live2d-config.js?v=20250120"></script>
 </head>
 <body>
+  <!-- 视频背景容器 -->
+  <div id="video-background" class="video-background">
+    <video id="bg-video" autoplay muted loop playsinline>
+      <!-- 视频源将通过JS动态加载 -->
+    </video>
+    <div class="video-overlay"></div>
+  </div>
 
 <header class="navbar glass">
   <div class="logo">
@@ -716,5 +726,6 @@ sudo systemctl restart docker</pre>
 }
 </style>
   <script src="./js/app.js?v=20250156"></script>
+  <script src="./js/video-background.js?v=20250120"></script>
 </body>
 </html>
