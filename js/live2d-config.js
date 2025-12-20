@@ -34,8 +34,11 @@
       opacityOnHover: 1.0
     },
     dialog: {
-      enable: true,      // 启用对话框
-      hitokoto: true    // 使用一言API
+      enable: false,     // 禁用对话框（不显示按钮）
+      hitokoto: false    // 禁用一言API
+    },
+    tooltip: {
+      enable: false      // 禁用提示
     }
   });
 
