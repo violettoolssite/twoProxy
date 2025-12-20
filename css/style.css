@@ -20,50 +20,14 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(circle at 20% 20%, rgba(37,99,235,0.08), transparent 32%),
+              radial-gradient(circle at 80% 0%, rgba(14,165,233,0.08), transparent 30%),
+              var(--bg);
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  position: relative;
-}
-
-/* 视频背景样式 */
-.video-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  overflow: hidden;
-}
-
-.video-background video {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
-  transform: translate(-50%, -50%);
-  object-fit: cover;
-  opacity: 0.3;
-  transition: opacity 0.5s ease;
-}
-
-.video-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 20% 20%, rgba(37,99,235,0.08), transparent 32%),
-              radial-gradient(circle at 80% 0%, rgba(14,165,233,0.08), transparent 30%),
-              rgba(247, 248, 251, 0.85);
-  pointer-events: none;
 }
 
 /* Live2D Widget 样式调整 */
@@ -71,16 +35,17 @@ body {
   z-index: 9999 !important;
 }
 
+/* 隐藏Live2D的按钮 */
+#live2d-widget .live2d-menu {
+  display: none !important;
+}
+
+#live2d-widget .live2d-tips {
+  display: none !important;
+}
+
 /* 移动端优化 */
 @media (max-width: 768px) {
-  .video-background video {
-    opacity: 0.2;
-  }
-  
-  .video-overlay {
-    background: rgba(247, 248, 251, 0.9);
-  }
-  
   /* 移动端隐藏Live2D或调整位置 */
   #live2d-widget {
     display: none; /* 移动端可以隐藏Live2D以节省性能 */
