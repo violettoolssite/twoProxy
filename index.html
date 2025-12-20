@@ -458,6 +458,51 @@ sudo systemctl restart docker</pre>
   </section>
 </main>
 
+<!-- 服务提供商展示 -->
+<section class="services-section">
+  <div class="services-container">
+    <h2 class="services-title">🛠️ 服务支持</h2>
+    <p class="services-subtitle">感谢以下优秀的服务提供商为本站提供基础设施支持</p>
+    
+    <div class="services-grid">
+      <!-- Cloudflare -->
+      <div class="service-card">
+        <div class="service-icon">☁️</div>
+        <div class="service-name">Cloudflare</div>
+        <div class="service-desc">CDN · Workers · 邮件路由</div>
+      </div>
+      
+      <!-- Tencent Cloud -->
+      <div class="service-card">
+        <div class="service-icon">☁️</div>
+        <div class="service-name">Tencent Cloud</div>
+        <div class="service-desc">腾讯云服务器 · CDN</div>
+      </div>
+      
+      <!-- Alibaba Cloud -->
+      <div class="service-card">
+        <div class="service-icon">☁️</div>
+        <div class="service-name">Alibaba Cloud</div>
+        <div class="service-desc">阿里云服务器</div>
+      </div>
+      
+      <!-- Google Cloud -->
+      <div class="service-card">
+        <div class="service-icon">☁️</div>
+        <div class="service-name">Google Cloud</div>
+        <div class="service-desc">云基础设施</div>
+      </div>
+      
+      <!-- Spaceship -->
+      <div class="service-card">
+        <div class="service-icon">🚀</div>
+        <div class="service-name">Spaceship</div>
+        <div class="service-desc">域名注册 · DNS</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <footer class="disclaimer-footer">
   <div class="disclaimer-content">
     <p><strong>免责声明</strong></p>
@@ -474,6 +519,116 @@ sudo systemctl restart docker</pre>
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* 服务提供商展示样式 */
+.services-section {
+  padding: 60px 20px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.services-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.services-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.services-subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-bottom: 48px;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.service-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.service-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
+}
+
+.service-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.service-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.service-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .services-section {
+    padding: 40px 16px;
+  }
+  
+  .services-title {
+    font-size: 24px;
+  }
+  
+  .services-subtitle {
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+  
+  .services-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+  }
+  
+  .service-card {
+    padding: 24px 16px;
+  }
+  
+  .service-icon {
+    font-size: 36px;
+  }
+  
+  .service-name {
+    font-size: 16px;
+  }
+  
+  .service-desc {
+    font-size: 12px;
+  }
 }
 </style>
 <script src="./js/app.js?v=20250155"></script>

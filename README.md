@@ -609,6 +609,59 @@ bash scripts/restore.sh BACKUP_DATE
 
 ---
 
+## 🛠️ 服务支持
+
+感谢以下优秀的服务提供商为本站提供基础设施支持！
+
+<table>
+  <tr>
+    <td align="center" width="20%">
+      <br>
+      <h3>☁️</h3>
+      <h4>Cloudflare</h4>
+      <p><sub>CDN · Workers<br>邮件路由</sub></p>
+      <br>
+    </td>
+    <td align="center" width="20%">
+      <br>
+      <h3>☁️</h3>
+      <h4>Tencent Cloud</h4>
+      <p><sub>腾讯云服务器<br>CDN加速</sub></p>
+      <br>
+    </td>
+    <td align="center" width="20%">
+      <br>
+      <h3>☁️</h3>
+      <h4>Alibaba Cloud</h4>
+      <p><sub>阿里云服务器<br>云计算</sub></p>
+      <br>
+    </td>
+    <td align="center" width="20%">
+      <br>
+      <h3>☁️</h3>
+      <h4>Google Cloud</h4>
+      <p><sub>云基础设施<br>全球网络</sub></p>
+      <br>
+    </td>
+    <td align="center" width="20%">
+      <br>
+      <h3>🚀</h3>
+      <h4>Spaceship</h4>
+      <p><sub>域名注册<br>DNS服务</sub></p>
+      <br>
+    </td>
+  </tr>
+</table>
+
+<div align="center">
+  <sub>
+    本项目的稳定运行离不开上述服务商的优质基础设施支持。<br>
+    我们使用多云架构确保服务的高可用性和最佳性能。
+  </sub>
+</div>
+
+---
+
 ## ⚠️ 免责声明
 
 1. 本项目仅供学习和研究使用
