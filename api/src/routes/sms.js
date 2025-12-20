@@ -211,7 +211,8 @@ router.get('/get-phone', authenticate, async (req, res) => {
     }
 
     // 使用对接码获取号码
-    const params = {
+    // 首先尝试使用0.5元以内的号码（约1.7元成本）
+    let params = {
       api: 'getPhone',
       token: token,
       sid: actualSid,
@@ -233,12 +234,31 @@ router.get('/get-phone', authenticate, async (req, res) => {
     if (ascription) params.ascription = ascription;
     if (province) params.Province = province;
 
-    const response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+    let response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
       params: params,
       timeout: 15000
     });
 
-    const data = response.data;
+    let data = response.data;
+
+    // 如果0.5元以内的号码无法获取，尝试使用更高价格的号码（约3.7元）
+    if (data.code !== 0 && data.code !== '0' && data.code !== 200) {
+      console.log(`[SMS] 无法获取0.5元以内的号码，尝试使用更高价格的号码...`);
+      
+      // 使用更高价格的号码（约3.7元成本）
+      params.max_money = 1.5; // 提高价格限制到1.5元
+      
+      response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+        params: params,
+        timeout: 15000
+      });
+      
+      data = response.data;
+      
+      if (data.code === 0 || data.code === '0' || data.code === 200) {
+        console.log(`[SMS] 成功获取更高价格的号码: ${data.phone}`);
+      }
+    }
 
     if (data.code === 0 || data.code === '0' || data.code === 200) {
       // 更新用户使用次数，并记录当前持有的号码
