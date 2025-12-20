@@ -617,35 +617,35 @@ bash scripts/restore.sh BACKUP_DATE
   <tr>
     <td align="center" width="20%">
       <br>
-      <h3>☁️</h3>
+      <img src="https://www.cloudflare.com/static/images/logo/cloudflare-logo.svg" alt="Cloudflare" width="120" height="auto">
       <h4>Cloudflare</h4>
       <p><sub>CDN · Workers<br>邮件路由</sub></p>
       <br>
     </td>
     <td align="center" width="20%">
       <br>
-      <h3>☁️</h3>
+      <img src="https://main.qcloudimg.com/raw/logo/tencent-cloud-logo.svg" alt="Tencent Cloud" width="120" height="auto">
       <h4>Tencent Cloud</h4>
       <p><sub>腾讯云服务器<br>CDN加速</sub></p>
       <br>
     </td>
     <td align="center" width="20%">
       <br>
-      <h3>☁️</h3>
+      <img src="https://img.alicdn.com/tfs/TB1_ZXuNcfpK1RjSZFOXXa6nFXa-32-32.ico" alt="Alibaba Cloud" width="120" height="auto">
       <h4>Alibaba Cloud</h4>
       <p><sub>阿里云服务器<br>云计算</sub></p>
       <br>
     </td>
     <td align="center" width="20%">
       <br>
-      <h3>☁️</h3>
+      <img src="https://cloud.google.com/images/branding/google-cloud/logo-cloud.svg" alt="Google Cloud" width="120" height="auto">
       <h4>Google Cloud</h4>
       <p><sub>云基础设施<br>全球网络</sub></p>
       <br>
     </td>
     <td align="center" width="20%">
       <br>
-      <h3>🚀</h3>
+      <img src="https://www.spaceship.com/favicon.svg" alt="Spaceship" width="120" height="auto">
       <h4>Spaceship</h4>
       <p><sub>域名注册<br>DNS服务</sub></p>
       <br>
