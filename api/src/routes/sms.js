@@ -15,8 +15,31 @@ const SMS_API_CONFIG = {
 
 // 项目列表
 const COMMON_PROJECTS = [
-  { id: 'cursor', name: 'Cursor' }  // 不使用对接码，使用通用号码池（质量更好）
+  { id: 'cursor', name: 'Cursor' }
 ];
+
+// Cursor项目的对接码列表（轮询使用）
+const CURSOR_DOCKING_CODES = [
+  '78720-Q8DN0E6ZQF',
+  '78720-3MIXJU46CU'
+];
+
+// 对接码使用计数器（用于轮询）
+let dockingCodeIndex = 0;
+
+/**
+ * 获取项目的对接码
+ * @param {string} sid - 项目ID
+ * @returns {string|null} 对接码，如果没有则返回null
+ */
+function getDockingCode(sid) {
+  if (sid === '78720' || sid === 'cursor') {
+    // 轮询使用对接码
+    const code = CURSOR_DOCKING_CODES[dockingCodeIndex % CURSOR_DOCKING_CODES.length];
+    return code;
+  }
+  return null;
+}
 
 /**
  * 获取或刷新Token
@@ -180,13 +203,24 @@ router.get('/get-phone', authenticate, async (req, res) => {
       actualSid = '78720'; // Cursor项目ID
     }
 
-    // 使用通用号码池（不使用对接码），质量更好
+    // 获取对接码（轮询使用）
+    const uid = getDockingCode(actualSid);
+    if (uid) {
+      dockingCodeIndex++; // 下次使用下一个对接码
+    }
+
+    // 使用对接码获取号码
     const params = {
       api: 'getPhone',
       token: token,
       sid: actualSid,
       max_money: 0.5  // 限制最高价格为0.5元
     };
+
+    // 如果指定了对接码，添加uid参数
+    if (uid) {
+      params.uid = uid;
+    }
 
     // 用户可选参数
     if (isp) params.isp = isp;
@@ -268,15 +302,51 @@ router.get('/get-message', async (req, res) => {
 
     const token = await getToken();
 
-    const response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
-      params: {
-        api: 'getMessage',
-        token: token,
-        sid: sid,
-        phone: phone
-      },
-      timeout: 10000
-    });
+    // 对于Cursor项目，转换为实际项目ID并获取对接码
+    let actualSid = sid;
+    if (sid === 'cursor') {
+      actualSid = '78720';
+    }
+
+    // 尝试使用对接码获取验证码（尝试所有对接码）
+    let response;
+    let lastError = null;
+    
+    for (const uid of CURSOR_DOCKING_CODES) {
+      try {
+        response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+          params: {
+            api: 'getMessage',
+            token: token,
+            sid: actualSid,
+            uid: uid,
+            phone: phone
+          },
+          timeout: 10000
+        });
+        
+        // 如果成功，跳出循环
+        if (response.data.code === 0 || response.data.code === '0' || response.data.code === 200) {
+          break;
+        }
+      } catch (error) {
+        lastError = error;
+        continue;
+      }
+    }
+
+    // 如果所有对接码都失败，尝试不使用对接码
+    if (!response || (response.data.code !== 0 && response.data.code !== '0' && response.data.code !== 200)) {
+      response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+        params: {
+          api: 'getMessage',
+          token: token,
+          sid: actualSid,
+          phone: phone
+        },
+        timeout: 10000
+      });
+    }
 
     const data = response.data;
 
@@ -318,15 +388,51 @@ router.post('/release-phone', authenticate, async (req, res) => {
 
     const token = await getToken();
 
-    const response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
-      params: {
-        api: 'cancelRecv',
-        token: token,
-        sid: sid,
-        phone: phone
-      },
-      timeout: 10000
-    });
+    // 对于Cursor项目，转换为实际项目ID并获取对接码
+    let actualSid = sid;
+    if (sid === 'cursor') {
+      actualSid = '78720';
+    }
+
+    // 尝试使用对接码释放号码（尝试所有对接码）
+    let response;
+    let lastError = null;
+    
+    for (const uid of CURSOR_DOCKING_CODES) {
+      try {
+        response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+          params: {
+            api: 'cancelRecv',
+            token: token,
+            sid: actualSid,
+            uid: uid,
+            phone: phone
+          },
+          timeout: 10000
+        });
+        
+        // 如果成功，跳出循环
+        if (response.data.code === 0 || response.data.code === '0' || response.data.code === 200) {
+          break;
+        }
+      } catch (error) {
+        lastError = error;
+        continue;
+      }
+    }
+
+    // 如果所有对接码都失败，尝试不使用对接码
+    if (!response || (response.data.code !== 0 && response.data.code !== '0' && response.data.code !== 200)) {
+      response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+        params: {
+          api: 'cancelRecv',
+          token: token,
+          sid: actualSid,
+          phone: phone
+        },
+        timeout: 10000
+      });
+    }
 
     const data = response.data;
 

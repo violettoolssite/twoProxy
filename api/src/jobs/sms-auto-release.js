@@ -18,6 +18,12 @@ const SMS_API_CONFIG = {
 let cachedToken = null;
 let tokenExpireTime = 0;
 
+// Cursor项目的对接码列表
+const CURSOR_DOCKING_CODES = [
+  '78720-Q8DN0E6ZQF',
+  '78720-3MIXJU46CU'
+];
+
 /**
  * 获取好助码API Token
  */
@@ -62,6 +68,35 @@ async function releasePhone(sid, phone) {
   try {
     const token = await getToken();
     
+    // 如果是Cursor项目，尝试使用对接码
+    if (sid === '78720') {
+      // 尝试所有对接码
+      for (const uid of CURSOR_DOCKING_CODES) {
+        try {
+          const response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
+            params: {
+              api: 'cancelRecv',
+              token: token,
+              sid: sid,
+              uid: uid,
+              phone: phone
+            },
+            timeout: 10000
+          });
+
+          const data = response.data;
+          
+          if (data.code === 0 || data.code === '0' || data.code === 200) {
+            console.log(`[SMS Auto-Release] 释放成功: ${phone} (对接码: ${uid})`);
+            return true;
+          }
+        } catch (error) {
+          continue; // 尝试下一个对接码
+        }
+      }
+    }
+    
+    // 如果对接码都失败，或不使用对接码，尝试不使用对接码
     const response = await axios.get(`${SMS_API_CONFIG.baseURL}/sms/`, {
       params: {
         api: 'cancelRecv',
