@@ -8,7 +8,7 @@ const { activateSubscription } = require('./subscription');
 const router = express.Router();
 
 // 简单的管理员校验：仅允许特定邮箱
-const ADMIN_EMAILS = ['1494458927@qq.com'];
+const ADMIN_EMAILS = ['1494458927@qq.com', 'violet@yljdteam.com'];
 
 function requireAdmin(req, res, next) {
   if (!req.user || !ADMIN_EMAILS.includes(req.user.email)) {
@@ -145,6 +145,151 @@ function getStatusText(status) {
   };
   return statusMap[status] || status;
 }
+
+/**
+ * GET /api/admin/sms-users - 获取所有用户的SMS使用情况
+ * 支持分页和搜索
+ */
+router.get('/sms-users', async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search = '' } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const offset = (pageNum - 1) * limitNum;
+
+    const where = [];
+    const params = [];
+
+    if (search) {
+      where.push('(u.email LIKE ? OR u.nickname LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    // 查询用户列表
+    // 注意: MySQL的prepared statement不支持LIMIT参数绑定，需要直接拼接
+    // limitNum和offset已经过parseInt验证，是安全的整数
+    const usersSql = `
+      SELECT u.id, u.email, u.nickname,
+             u.sms_usage_count, u.sms_usage_limit, u.sms_last_used_at,
+             u.created_at
+      FROM users u
+      ${whereSql}
+      ORDER BY u.sms_usage_count DESC, u.created_at DESC
+      LIMIT ${limitNum} OFFSET ${offset}
+    `;
+
+    const users = await db.pool.query(usersSql, params).then(([rows]) => rows);
+
+    // 查询总数
+    const countSql = `SELECT COUNT(*) as total FROM users u ${whereSql}`;
+    const [[{ total }]] = await db.pool.query(countSql, params);
+
+    res.json({
+      success: true,
+      data: {
+        users: users.map(u => ({
+          id: u.id,
+          email: u.email,
+          nickname: u.nickname,
+          smsUsageCount: u.sms_usage_count || 0,
+          smsUsageLimit: u.sms_usage_limit || 3,
+          smsLastUsedAt: u.sms_last_used_at,
+          createdAt: u.created_at
+        })),
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum)
+        }
+      }
+    });
+  } catch (err) {
+    console.error('[Admin] Get SMS users failed:', err);
+    res.status(500).json({ error: '获取用户列表失败' });
+  }
+});
+
+/**
+ * POST /api/admin/sms-users/:userId/update-limit - 修改用户SMS使用次数限制
+ * Body: { limit: number, resetCount: boolean }
+ */
+router.post('/sms-users/:userId/update-limit', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit, resetCount } = req.body;
+
+    if (typeof limit !== 'number' || limit < 0) {
+      return res.status(400).json({ error: '次数限制必须是非负整数' });
+    }
+
+    // 检查用户是否存在
+    const user = await db.queryOne('SELECT id, email FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    // 更新限制
+    const updates = ['sms_usage_limit = ?'];
+    const params = [limit];
+
+    if (resetCount) {
+      updates.push('sms_usage_count = 0');
+    }
+
+    await db.update(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+      [...params, userId]
+    );
+
+    // 清除用户缓存
+    await redis.del(`user:${userId}`);
+
+    // 获取更新后的数据
+    const updatedUser = await db.queryOne(
+      'SELECT sms_usage_count, sms_usage_limit FROM users WHERE id = ?',
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      message: `已更新用户 ${user.email} 的SMS额度`,
+      data: {
+        smsUsageCount: updatedUser.sms_usage_count || 0,
+        smsUsageLimit: updatedUser.sms_usage_limit || 3
+      }
+    });
+  } catch (err) {
+    console.error('[Admin] Update SMS limit failed:', err);
+    res.status(500).json({ error: '更新失败' });
+  }
+});
+
+/**
+ * GET /api/admin/sms-stats - 获取SMS使用统计
+ */
+router.get('/sms-stats', async (req, res) => {
+  try {
+    const stats = await db.queryOne(`
+      SELECT 
+        COUNT(*) as totalUsers,
+        SUM(sms_usage_count) as totalUsage,
+        COUNT(CASE WHEN sms_usage_count >= sms_usage_limit THEN 1 END) as usersAtLimit,
+        COUNT(CASE WHEN sms_usage_count > 0 THEN 1 END) as activeUsers
+      FROM users
+    `);
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (err) {
+    console.error('[Admin] Get SMS stats failed:', err);
+    res.status(500).json({ error: '获取统计失败' });
+  }
+});
 
 module.exports = router;
 

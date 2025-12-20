@@ -37,3 +37,10 @@ BASE_URL=https://mirror.yljdteam.com
 PAYJS_MCHID=
 PAYJS_KEY=
 PAYJS_NOTIFY_URL=https://mirror.yljdteam.com/api/payment/callback
+
+// 短信接码API配置（好助码平台）
+// 服务器地址: https://api.haozhuma.com 或 https://api.haozhuyun.com
+// 获取账号: 登录好助码平台后，在"API开发"页面获取API账号和密码
+SMS_API_URL=https://api.haozhuma.com
+SMS_API_USER=YOUR_SMS_API_USERNAME
+SMS_API_PASS=YOUR_SMS_API_PASSWORD

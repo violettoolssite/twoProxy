@@ -109,17 +109,88 @@
       <a href="/#/docker">Docker</a>
       <a href="/#/download">文件下载</a>
       <a href="/#/email">临时邮箱</a>
+      <a href="/#/sms">短信接码</a>
       <a href="/#/sponsors">感谢名单</a>
       <a href="/">返回前台</a>
     </nav>
   </header>
 
   <main class="admin-layout">
+    <!-- SMS使用次数管理 -->
+    <section class="card glass" style="margin-bottom: 20px;">
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">短信接码次数管理</h1>
+          <p class="admin-subtitle">管理员：<span id="admin-email" class="mono">检测中...</span></p>
+        </div>
+      </div>
+
+      <!-- 统计信息 -->
+      <div id="sms-stats" style="display: flex; gap: 16px; padding: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+          <div style="font-size: 13px; color: #6b7280;">总用户数</div>
+          <div id="stat-total-users" style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-top: 8px;">-</div>
+        </div>
+        <div style="flex: 1; min-width: 200px; padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 8px;">
+          <div style="font-size: 13px; color: #6b7280;">活跃用户</div>
+          <div id="stat-active-users" style="font-size: 24px; font-weight: bold; color: #22c55e; margin-top: 8px;">-</div>
+        </div>
+        <div style="flex: 1; min-width: 200px; padding: 16px; background: rgba(250, 204, 21, 0.1); border-radius: 8px;">
+          <div style="font-size: 13px; color: #6b7280;">额度用完</div>
+          <div id="stat-users-at-limit" style="font-size: 24px; font-weight: bold; color: #facc15; margin-top: 8px;">-</div>
+        </div>
+        <div style="flex: 1; min-width: 200px; padding: 16px; background: rgba(168, 85, 247, 0.1); border-radius: 8px;">
+          <div style="font-size: 13px; color: #6b7280;">总使用次数</div>
+          <div id="stat-total-usage" style="font-size: 24px; font-weight: bold; color: #a855f7; margin-top: 8px;">-</div>
+        </div>
+      </div>
+
+      <!-- 搜索和过滤 -->
+      <div class="admin-filters" style="padding: 0 20px 12px;">
+        <input 
+          type="text" 
+          id="user-search" 
+          placeholder="搜索用户（邮箱/昵称）..."
+          style="flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+        />
+        <button class="btn primary" onclick="searchUsers()" style="padding: 8px 20px;">搜索</button>
+        <button class="btn ghost" onclick="resetSearch()" style="padding: 8px 20px;">重置</button>
+      </div>
+
+      <!-- 用户列表 -->
+      <div style="overflow-x: auto; padding: 0 20px 20px;">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>用户ID</th>
+              <th>邮箱</th>
+              <th>昵称</th>
+              <th>已使用</th>
+              <th>总额度</th>
+              <th>剩余</th>
+              <th>最后使用</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="users-list">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">加载中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页 -->
+      <div id="pagination" style="display: flex; justify-content: center; gap: 8px; padding: 0 20px 20px;">
+        <!-- 分页按钮将由JS动态生成 -->
+      </div>
+    </section>
+
+    <!-- 为爱发电说明 -->
     <section class="card glass">
       <div class="admin-header">
         <div>
           <h1 class="admin-title">为爱发电模式</h1>
-          <p class="admin-subtitle">管理员：<span id="admin-email" class="mono">检测中...</span></p>
         </div>
       </div>
 
@@ -180,15 +251,203 @@
       return data;
     }
 
+    let currentPage = 1;
+    let currentSearch = '';
+
     async function initAdmin() {
       try {
         const profile = await apiRequest('/user/profile');
-        document.getElementById('admin-email').textContent = profile.user.email || '(未知)';
+        const email = profile.user.email || '';
+        document.getElementById('admin-email').textContent = email || '(未知)';
+
+        // 检查是否是violet账号
+        if (email !== '1494458927@qq.com' && email !== 'violet@yljdteam.com') {
+          showNotify('仅限站长访问', 'error');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+          return;
+        }
+
+        // 加载数据
+        await Promise.all([
+          loadSmsStats(),
+          loadSmsUsers(1)
+        ]);
       } catch (err) {
         document.getElementById('admin-email').textContent = '未登录';
         showNotify('请先登录管理员账号', 'warning');
+        setTimeout(() => {
+          window.location.href = '/user/';
+        }, 2000);
       }
     }
+
+    async function loadSmsStats() {
+      try {
+        const data = await apiRequest('/admin/sms-stats');
+        if (data.success && data.data) {
+          document.getElementById('stat-total-users').textContent = data.data.totalUsers || 0;
+          document.getElementById('stat-active-users').textContent = data.data.activeUsers || 0;
+          document.getElementById('stat-users-at-limit').textContent = data.data.usersAtLimit || 0;
+          document.getElementById('stat-total-usage').textContent = data.data.totalUsage || 0;
+        }
+      } catch (err) {
+        console.error('加载统计失败:', err);
+      }
+    }
+
+    async function loadSmsUsers(page = 1, search = '') {
+      currentPage = page;
+      currentSearch = search;
+
+      try {
+        const params = new URLSearchParams({
+          page: page,
+          limit: 20
+        });
+        if (search) params.append('search', search);
+
+        const data = await apiRequest('/admin/sms-users?' + params);
+        if (data.success && data.data) {
+          renderUsersList(data.data.users);
+          renderPagination(data.data.pagination);
+        }
+      } catch (err) {
+        document.getElementById('users-list').innerHTML = 
+          '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + err.message + '</td></tr>';
+      }
+    }
+
+    function renderUsersList(users) {
+      const tbody = document.getElementById('users-list');
+      
+      if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">暂无用户数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const remaining = Math.max(0, u.smsUsageLimit - u.smsUsageCount);
+        const lastUsed = u.smsLastUsedAt ? new Date(u.smsLastUsedAt).toLocaleString('zh-CN') : '-';
+        const isAtLimit = remaining === 0;
+
+        return `
+          <tr>
+            <td class="mono">${u.id}</td>
+            <td class="mono" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${u.email}</td>
+            <td>${u.nickname || '-'}</td>
+            <td style="font-weight: 500;">${u.smsUsageCount}</td>
+            <td style="font-weight: 500;">${u.smsUsageLimit}</td>
+            <td style="font-weight: bold; color: ${isAtLimit ? '#ef4444' : '#22c55e'};">${remaining}</td>
+            <td style="font-size: 12px;">${lastUsed}</td>
+            <td>
+              <button class="btn ghost" onclick="showUpdateModal(${u.id}, '${u.email}', ${u.smsUsageCount}, ${u.smsUsageLimit})" style="font-size: 12px; padding: 4px 12px;">修改</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderPagination(pagination) {
+      const container = document.getElementById('pagination');
+      if (!pagination || pagination.totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const { page, totalPages } = pagination;
+      let html = '';
+
+      // 上一页
+      if (page > 1) {
+        html += `<button class="btn ghost" onclick="loadSmsUsers(${page - 1}, '${currentSearch}')" style="padding: 6px 12px; font-size: 13px;">上一页</button>`;
+      }
+
+      // 页码
+      const maxPages = 5;
+      let startPage = Math.max(1, page - Math.floor(maxPages / 2));
+      let endPage = Math.min(totalPages, startPage + maxPages - 1);
+      
+      if (endPage - startPage < maxPages - 1) {
+        startPage = Math.max(1, endPage - maxPages + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === page;
+        html += `<button class="btn ${isActive ? 'primary' : 'ghost'}" onclick="loadSmsUsers(${i}, '${currentSearch}')" style="padding: 6px 12px; font-size: 13px;">${i}</button>`;
+      }
+
+      // 下一页
+      if (page < totalPages) {
+        html += `<button class="btn ghost" onclick="loadSmsUsers(${page + 1}, '${currentSearch}')" style="padding: 6px 12px; font-size: 13px;">下一页</button>`;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function searchUsers() {
+      const search = document.getElementById('user-search').value.trim();
+      loadSmsUsers(1, search);
+    }
+
+    function resetSearch() {
+      document.getElementById('user-search').value = '';
+      loadSmsUsers(1, '');
+    }
+
+    function showUpdateModal(userId, email, usedCount, currentLimit) {
+      const newLimit = prompt(
+        `修改用户 ${email} 的SMS额度\n\n当前使用: ${usedCount} / ${currentLimit}\n\n请输入新的额度限制（输入数字）：`,
+        currentLimit
+      );
+
+      if (newLimit === null) return;
+
+      const limit = parseInt(newLimit);
+      if (isNaN(limit) || limit < 0) {
+        showNotify('请输入有效的数字', 'error');
+        return;
+      }
+
+      const resetCount = confirm('是否同时重置已使用次数为0？\n\n点击"确定"重置，点击"取消"保留当前使用次数');
+
+      updateUserLimit(userId, limit, resetCount);
+    }
+
+    async function updateUserLimit(userId, limit, resetCount) {
+      try {
+        const data = await apiRequest(`/admin/sms-users/${userId}/update-limit`, {
+          method: 'POST',
+          body: JSON.stringify({ limit, resetCount })
+        });
+
+        if (data.success) {
+          showNotify(data.message || '更新成功', 'success');
+          // 刷新列表和统计
+          await Promise.all([
+            loadSmsStats(),
+            loadSmsUsers(currentPage, currentSearch)
+          ]);
+        } else {
+          showNotify(data.error || '更新失败', 'error');
+        }
+      } catch (err) {
+        showNotify('更新失败: ' + err.message, 'error');
+      }
+    }
+
+    // 回车搜索
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('user-search');
+      if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            searchUsers();
+          }
+        });
+      }
+    });
 
     // 通知模态框
     function showNotify(message, type = 'info') {

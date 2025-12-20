@@ -163,6 +163,52 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
+## 📚 文档索引
+
+本项目提供完整的文档体系，涵盖部署、开发、功能和管理等各个方面。
+
+### 🚀 部署文档
+
+| 文档 | 说明 | 适用场景 |
+|------|------|---------|
+| [DEPLOYMENT.md](DEPLOYMENT.md) | 完整部署指南 | 单服务器从零部署 |
+| [TWO_SERVER_MIGRATION.md](TWO_SERVER_MIGRATION.md) | 双服务器部署和迁移 | 生产环境高可用部署 |
+| [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md) | 迁移检查清单 | 服务器迁移前核对 |
+| [deploy/GUANGZHOU_DEPLOYMENT.md](deploy/GUANGZHOU_DEPLOYMENT.md) | 广州服务器专用文档 | 加速节点部署 |
+
+### 📧 临时邮箱文档
+
+| 文档 | 说明 | 适用对象 |
+|------|------|---------|
+| [临时邮箱集成说明](https://github.com/violettoolssite/twoProxy#-临时邮箱使用) | 前端使用指南 | 普通用户 |
+| Cloudflare Worker 配置 | 邮件服务后端部署 | 开发者/管理员 |
+
+### 📱 短信接码文档
+
+| 文档 | 说明 | 适用对象 |
+|------|------|---------|
+| [SMS_INTEGRATION.md](SMS_INTEGRATION.md) | 短信接码功能集成文档 | 开发者 |
+| [SMS_USAGE_LIMIT.md](SMS_USAGE_LIMIT.md) | 使用次数限制功能说明 | 开发者/管理员 |
+| [SMS_AUTO_RELEASE.md](SMS_AUTO_RELEASE.md) | 自动释放机制详解 | 开发者/管理员 |
+| [ADMIN_SMS_GUIDE.md](ADMIN_SMS_GUIDE.md) | 管理员SMS管理指南 | 管理员 |
+
+### 🔧 开发文档
+
+| 文档 | 说明 | 适用对象 |
+|------|------|---------|
+| [api/README.md](api/README.md) | 后端API文档 | 后端开发者 |
+| [browser-extension/README.md](browser-extension/README.md) | 浏览器扩展说明 | 前端开发者 |
+
+### 📖 快速导航
+
+- **新手入门**: 从 [DEPLOYMENT.md](DEPLOYMENT.md) 开始
+- **生产部署**: 查看 [TWO_SERVER_MIGRATION.md](TWO_SERVER_MIGRATION.md)
+- **功能开发**: 参考 [api/README.md](api/README.md)
+- **管理运维**: 查阅 [ADMIN_SMS_GUIDE.md](ADMIN_SMS_GUIDE.md) 和 [SMS_AUTO_RELEASE.md](SMS_AUTO_RELEASE.md)
+- **迁移升级**: 使用 [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md)
+
+---
+
 ## 🏗️ 部署架构
 
 ### 单服务器架构

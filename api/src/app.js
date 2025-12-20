@@ -13,6 +13,7 @@ const subscriptionRoutes = require('./routes/subscription');
 const paymentRoutes = require('./routes/payment');
 const internalRoutes = require('./routes/internal');
 const adminRoutes = require('./routes/admin');
+const smsRoutes = require('./routes/sms');
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/sms', smsRoutes);
 
 // 内部接口（只允许本机访问）
 app.use('/api/internal', (req, res, next) => {
@@ -91,6 +93,10 @@ const PORT = config.port;
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`[Mirror API] Server running on http://127.0.0.1:${PORT}`);
   console.log(`[Mirror API] Environment: ${config.nodeEnv}`);
+  
+  // 启动SMS自动释放定时任务
+  const { startAutoRelease } = require('./jobs/sms-auto-release');
+  startAutoRelease();
 });
 
 // 优雅关闭

@@ -1,4 +1,4 @@
-const pages = ["github", "docker", "download", "email", "sponsors"];
+const pages = ["github", "docker", "download", "email", "sms", "sponsors"];
 
 function showPage(name) {
   pages.forEach(p => {
@@ -21,6 +21,11 @@ function router() {
   // 如果切换到感谢名单页面，加载数据
   if (hash === 'sponsors') {
     setTimeout(() => loadSponsors(), 100);
+  }
+  
+  // 如果切换到短信接码页面，加载使用情况
+  if (hash === 'sms') {
+    setTimeout(() => loadSmsUsage(), 100);
   }
 }
 window.addEventListener("hashchange", router);
@@ -1442,4 +1447,408 @@ function formatEmailTime(dateStr) {
     hour: '2-digit', 
     minute: '2-digit' 
   });
+}
+
+/* ============================================
+ * 短信接码功能
+ * ============================================ */
+let currentSmsPhone = '';
+let currentSmsProject = '';
+let smsCheckTimer = null;
+const SMS_HISTORY_KEY = 'temp_sms_history';
+
+// 页面加载时获取项目列表
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadSmsProjects();
+});
+
+// 监听路由变化，加载SMS历史
+window.addEventListener('hashchange', () => {
+  if (window.location.hash === '#/sms') {
+    setTimeout(() => {
+      loadSmsProjects();
+      loadSmsHistory();
+    }, 100);
+  }
+});
+
+// 加载项目列表
+async function loadSmsProjects() {
+  // 只支持Cursor项目，直接设置默认值
+  const select = document.getElementById('sms-project');
+  if (select) {
+    select.innerHTML = '<option value="cursor" selected>Cursor</option>';
+    select.value = 'cursor';
+  }
+}
+
+// 获取手机号
+async function getPhoneNumber() {
+  const token = localStorage.getItem('mirror_token');
+  if (!token) {
+    showNotify('请先登录', 'warning');
+    setTimeout(() => {
+      window.location.href = '/user/';
+    }, 1500);
+    return;
+  }
+  
+  const projectId = document.getElementById('sms-project').value;
+  if (!projectId) {
+    showNotify('请先选择项目类型', 'warning');
+    return;
+  }
+  
+  const isp = document.getElementById('sms-isp').value;
+  const type = document.getElementById('sms-type').value;
+  
+  try {
+    const params = new URLSearchParams({ sid: projectId });
+    if (isp) params.append('isp', isp);
+    if (type) params.append('ascription', type);
+    
+    const response = await fetch('/api/sms/get-phone?' + params, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+    const result = await response.json();
+    
+    if (result.success && result.data && result.data.phone) {
+      currentSmsPhone = result.data.phone;
+      currentSmsProject = projectId;
+      
+      document.getElementById('sms-phone-number').textContent = currentSmsPhone;
+      document.getElementById('sms-phone-result').style.display = 'block';
+      document.getElementById('sms-code-result').style.display = 'none';
+      
+      // 保存到历史
+      saveSmsToHistory(currentSmsPhone, projectId);
+      
+      // 更新使用情况显示
+      if (result.usage) {
+        updateSmsUsageDisplay(result.usage);
+      }
+      
+      showNotify('手机号获取成功', 'success');
+    } else {
+      showNotify(result.message || '获取手机号失败', 'error');
+      
+      // 如果是次数用完，更新显示
+      if (result.usage) {
+        updateSmsUsageDisplay(result.usage);
+      }
+    }
+  } catch (error) {
+    // console.error('获取手机号失败:', error);
+    showNotify('网络错误，请稍后重试', 'error');
+  }
+}
+
+// 复制手机号
+function copySmsPhone() {
+  if (!currentSmsPhone) return;
+  
+  navigator.clipboard.writeText(currentSmsPhone).then(() => {
+    showNotify('手机号已复制', 'success');
+  }).catch(() => {
+    // 降级方案
+    const input = document.createElement('input');
+    input.value = currentSmsPhone;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    showNotify('手机号已复制', 'success');
+  });
+}
+
+// 查看验证码
+async function checkSmsCode() {
+  if (!currentSmsPhone || !currentSmsProject) {
+    showNotify('请先获取手机号', 'warning');
+    return;
+  }
+  
+  document.getElementById('sms-code-result').style.display = 'block';
+  
+  // 立即检查一次
+  await refreshSmsCode();
+  
+  // 启动自动刷新（每5秒）
+  if (smsCheckTimer) clearInterval(smsCheckTimer);
+  smsCheckTimer = setInterval(refreshSmsCode, 5000);
+}
+
+// 刷新验证码
+async function refreshSmsCode() {
+  if (!currentSmsPhone || !currentSmsProject) return;
+  
+  try {
+    const response = await fetch(`/api/sms/get-message?sid=${currentSmsProject}&phone=${currentSmsPhone}`);
+    const result = await response.json();
+    
+    const contentDiv = document.getElementById('sms-code-content');
+    if (!contentDiv) return;
+    
+    if (result.success && result.data) {
+      if (result.data.code === '0' && result.data.yzm) {
+        // 收到验证码
+        contentDiv.innerHTML = `
+          <div style="margin-bottom: 16px; padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 6px; border-left: 3px solid #22c55e;">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">验证码：</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 28px; font-weight: bold; color: #22c55e; font-family: monospace; letter-spacing: 4px;">${escapeHtml(result.data.yzm)}</div>
+              <button class="btn ghost" onclick="navigator.clipboard.writeText('${escapeHtml(result.data.yzm)}').then(() => showNotify('验证码已复制', 'success'))">复制</button>
+            </div>
+          </div>
+          <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 4px; font-size: 13px; color: var(--text); line-height: 1.6; word-break: break-all;">
+            <strong>完整短信内容：</strong><br/>
+            ${escapeHtml(result.data.sms || '暂无')}
+          </div>
+        `;
+        
+        // 停止自动刷新
+        if (smsCheckTimer) {
+          clearInterval(smsCheckTimer);
+          smsCheckTimer = null;
+        }
+        
+        showNotify('验证码已收到', 'success');
+      } else {
+        contentDiv.innerHTML = `
+          <div style="text-align: center; padding: 20px 0; color: var(--text-muted);">
+            <div style="font-size: 14px; margin-bottom: 8px;">等待接收验证码...</div>
+            <div style="font-size: 12px; color: var(--text-muted);">自动刷新中（每5秒）</div>
+          </div>
+        `;
+      }
+    } else {
+      contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px 0; color: var(--text-muted);">
+          ${escapeHtml(result.message || '获取失败')}
+        </div>
+      `;
+    }
+  } catch (error) {
+    // console.error('获取验证码失败:', error);
+  }
+}
+
+// 释放号码
+async function releaseSmsPhone() {
+  if (!currentSmsPhone || !currentSmsProject) {
+    showNotify('没有可释放的号码', 'warning');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/sms/release-phone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sid: currentSmsProject,
+        phone: currentSmsPhone
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // 停止自动刷新
+      if (smsCheckTimer) {
+        clearInterval(smsCheckTimer);
+        smsCheckTimer = null;
+      }
+      
+      // 清空当前状态
+      currentSmsPhone = '';
+      currentSmsProject = '';
+      document.getElementById('sms-phone-result').style.display = 'none';
+      document.getElementById('sms-code-result').style.display = 'none';
+      
+      showNotify('号码已释放', 'success');
+    } else {
+      showNotify(result.message || '释放失败', 'error');
+    }
+  } catch (error) {
+    // console.error('释放号码失败:', error);
+    showNotify('网络错误，请稍后重试', 'error');
+  }
+}
+
+// 释放全部号码
+async function releaseAllPhones() {
+  try {
+    // 确认操作
+    const confirmed = await new Promise((resolve) => {
+      showConfirm(
+        '确定要释放全部号码吗？这将释放您账号下所有未释放的号码。',
+        () => resolve(true),
+        () => resolve(false)
+      );
+    });
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    showNotify('正在释放全部号码...', 'info');
+    
+    const response = await fetch('/api/sms/release-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // 停止自动刷新
+      if (smsCheckTimer) {
+        clearInterval(smsCheckTimer);
+        smsCheckTimer = null;
+      }
+      
+      // 清空当前状态
+      currentSmsPhone = '';
+      currentSmsProject = '';
+      document.getElementById('sms-phone-result').style.display = 'none';
+      document.getElementById('sms-code-result').style.display = 'none';
+      
+      showNotify('已释放全部号码，现在可以重新获取', 'success');
+    } else {
+      showNotify(result.message || '释放全部失败', 'error');
+    }
+  } catch (error) {
+    // console.error('释放全部失败:', error);
+    showNotify('网络错误，请稍后重试', 'error');
+  }
+}
+
+// 保存到历史
+function saveSmsToHistory(phone, projectId) {
+  try {
+    let history = JSON.parse(localStorage.getItem(SMS_HISTORY_KEY) || '[]');
+    
+    // 移除相同的号码
+    history = history.filter(item => item.phone !== phone);
+    
+    // 添加到开头
+    history.unshift({
+      phone: phone,
+      projectId: projectId,
+      timestamp: Date.now()
+    });
+    
+    // 保留最近10条
+    history = history.slice(0, 10);
+    
+    localStorage.setItem(SMS_HISTORY_KEY, JSON.stringify(history));
+    loadSmsHistory();
+  } catch (error) {
+    // console.error('保存历史失败:', error);
+  }
+}
+
+// 加载历史
+function loadSmsHistory() {
+  try {
+    const historyList = document.getElementById('sms-history-list');
+    if (!historyList) return;
+    
+    const history = JSON.parse(localStorage.getItem(SMS_HISTORY_KEY) || '[]');
+    
+    if (history.length === 0) {
+      historyList.innerHTML = `
+        <div style="text-align: center; width: 100%; padding: 20px 0; color: var(--text-muted); font-size: 13px;">
+          暂无历史记录
+        </div>
+      `;
+      return;
+    }
+    
+    historyList.innerHTML = history.map(item => `
+      <div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 6px; cursor: pointer; transition: all 0.2s;" 
+           onclick="navigator.clipboard.writeText('${item.phone}').then(() => showNotify('号码已复制', 'success'))"
+           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 2px 8px rgba(34, 197, 94, 0.2)';"
+           onmouseout="this.style.transform=''; this.style.boxShadow='';"
+           title="点击复制">
+        <span style="font-size: 14px; font-weight: 500; color: #22c55e; font-family: monospace;">${item.phone}</span>
+        <span style="font-size: 11px; color: var(--text-muted);">${formatRelativeTime(item.timestamp)}</span>
+      </div>
+    `).join('');
+  } catch (error) {
+    // console.error('加载历史失败:', error);
+  }
+}
+
+// 清空历史
+function clearSmsHistory() {
+  showConfirm('确定要清空所有历史号码吗？', () => {
+    localStorage.removeItem(SMS_HISTORY_KEY);
+    loadSmsHistory();
+    showNotify('历史已清空', 'success');
+  });
+}
+
+// 格式化相对时间
+function formatRelativeTime(timestamp) {
+  const now = Date.now();
+  const diff = now - timestamp;
+  
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+  if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+  
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+}
+
+// ============ SMS 使用次数管理 ============
+
+// 加载SMS使用情况
+async function loadSmsUsage() {
+  const token = localStorage.getItem('mirror_token');
+  if (!token) {
+    // 未登录，显示提示
+    document.getElementById('sms-usage-info').style.display = 'none';
+    document.getElementById('sms-limit-warning').style.display = 'none';
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/sms/usage', {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      updateSmsUsageDisplay(result.data);
+    }
+  } catch (error) {
+    // console.error('加载SMS使用情况失败:', error);
+  }
+}
+
+// 更新SMS使用情况显示
+function updateSmsUsageDisplay(usage) {
+  const { used, limit, remaining } = usage;
+  
+  document.getElementById('sms-remaining-count').textContent = remaining;
+  document.getElementById('sms-total-count').textContent = limit;
+  
+  const usageInfo = document.getElementById('sms-usage-info');
+  const limitWarning = document.getElementById('sms-limit-warning');
+  
+  if (remaining > 0) {
+    usageInfo.style.display = 'block';
+    limitWarning.style.display = 'none';
+  } else {
+    usageInfo.style.display = 'none';
+    limitWarning.style.display = 'block';
+  }
 }
