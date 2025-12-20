@@ -39,6 +39,12 @@
     },
     tooltip: {
       enable: false      // 禁用提示
+    },
+    menu: {
+      enable: false      // 禁用菜单
+    },
+    toolbar: {
+      enable: false      // 禁用工具栏
     }
   });
 

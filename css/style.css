@@ -35,13 +35,35 @@ body {
   z-index: 9999 !important;
 }
 
-/* 隐藏Live2D的按钮 */
-#live2d-widget .live2d-menu {
+/* 隐藏Live2D的所有按钮和工具栏 */
+#live2d-widget .live2d-menu,
+#live2d-widget .live2d-tips,
+#live2d-widget .live2d-toolbar,
+#live2d-widget .live2d-menu-item,
+#live2d-widget .live2d-menu-button,
+#live2d-widget .live2d-menu-icon,
+#live2d-widget .live2d-menu-list,
+#live2d-widget .live2d-menu-close,
+#live2d-widget .live2d-menu-toggle,
+#live2d-widget .live2d-menu-wrapper,
+#live2d-widget .live2d-menu-container,
+#live2d-widget .live2d-menu-items,
+#live2d-widget .live2d-menu-item-icon,
+#live2d-widget .live2d-menu-item-text,
+#live2d-widget .live2d-menu-item-button {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* 隐藏Live2D的工具栏和所有交互按钮 */
+#live2d-widget > div:not(.live2d-widget-canvas-container):not(.live2d-widget-model) {
   display: none !important;
 }
 
-#live2d-widget .live2d-tips {
-  display: none !important;
+/* 只保留画布和模型 */
+#live2d-widget canvas {
+  display: block !important;
 }
 
 /* 移动端优化 */
