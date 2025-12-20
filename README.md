@@ -214,6 +214,7 @@ bash migrate-all.sh
 | [TWO_SERVER_MIGRATION.md](TWO_SERVER_MIGRATION.md) | 双服务器部署和迁移 | 生产环境高可用部署 |
 | [MIGRATION_QUICK_START.md](MIGRATION_QUICK_START.md) | **⚡ 快速迁移指南** | **服务器迁移必读** |
 | [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md) | 迁移检查清单 | 服务器迁移前核对 |
+| [CDN_CONFIGURATION.md](CDN_CONFIGURATION.md) | **☁️ CDN边缘加速配置** | **提升全球访问速度** |
 | [deploy/GUANGZHOU_DEPLOYMENT.md](deploy/GUANGZHOU_DEPLOYMENT.md) | 广州服务器专用文档 | 加速节点部署 |
 
 ### 📧 临时邮箱文档
