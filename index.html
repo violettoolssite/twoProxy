@@ -299,6 +299,18 @@ sudo systemctl restart docker</pre>
         提供临时手机号码接收短信验证码服务，无需注册，即用即弃，保护您的隐私。支持国内三大运营商。
       </p>
       
+      <!-- 费用和余额提示 -->
+      <div style="margin-bottom: 16px; padding: 12px; background: rgba(250, 204, 21, 0.1); border-radius: 6px; border-left: 3px solid #facc15;">
+        <div style="font-size: 13px; color: var(--text); line-height: 1.6;">
+          <div style="margin-bottom: 6px;">
+            <strong>💰 费用说明：</strong>每个验证码花费约 <strong style="color: #facc15;">1.7元</strong>，成本较高，请谨慎使用。
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted);">
+            ⚠️ <strong>重要提示：</strong>如果收不到验证码，大概率是开发者账户余额不足，无法请求验证码。请稍后再试或联系开发者充值。
+          </div>
+        </div>
+      </div>
+      
       <!-- 使用次数显示 -->
       <div id="sms-usage-info" style="margin-bottom: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border-left: 3px solid #3b82f6; display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -318,7 +330,7 @@ sudo systemctl restart docker</pre>
           ⚠️ 您已使用完免费额度
         </div>
         <p style="font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 12px;">
-          该功能成本较高，每个用户免费使用3次。如果觉得好用，欢迎<a href="#/sponsors" style="color: #facc15; text-decoration: none; font-weight: 500;">发电支持</a>，我们将为您的账号开启对应金额的使用次数。
+          该功能成本较高（每个验证码约1.7元），每个用户免费使用3次。如果觉得好用，欢迎<a href="#/sponsors" style="color: #facc15; text-decoration: none; font-weight: 500;">发电支持</a>，我们将为您的账号开启对应金额的使用次数。
         </p>
         <div style="font-size: 12px; color: var(--text-muted);">
           提示：联系方式见<a href="#/sponsors" style="color: #facc15;">感谢名单</a>页面
@@ -348,12 +360,22 @@ sudo systemctl restart docker</pre>
         <input 
           type="text" 
           id="sms-specified-phone" 
-          placeholder="例如：19261651073（11位手机号）"
+          placeholder="请输入11位手机号"
           maxlength="11"
           pattern="[0-9]{11}"
           style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--text); font-size: 14px; outline: none; font-family: monospace; letter-spacing: 1px;"
           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
         />
+        <div style="margin-top: 8px; padding: 12px; background: rgba(250, 204, 21, 0.1); border-radius: 6px; border-left: 3px solid #facc15;">
+          <div style="font-size: 12px; color: var(--text); line-height: 1.6;">
+            <div style="margin-bottom: 4px;">
+              <strong>💰 费用说明：</strong>每个验证码花费约 <strong style="color: #facc15;">1.7元</strong>，成本较高，请谨慎使用。
+            </div>
+            <div style="color: var(--text-muted); font-size: 11px;">
+              ⚠️ 如果收不到验证码，大概率是开发者账户余额不足，无法请求验证码。请稍后再试或联系开发者充值。
+            </div>
+          </div>
+        </div>
       </div>
       
       <div style="display: flex; gap: 8px; margin-bottom: 16px;">
