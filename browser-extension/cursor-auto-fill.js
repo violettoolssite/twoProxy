@@ -77,28 +77,52 @@
   function fillVerificationCode(code) {
     console.log('[Cursor Auto Fill] 填写验证码:', code);
     
-    try {
-      // 查找验证码输入框
-      const codeInput = findInputByLabel('验证码') || 
+    const tryFillCode = () => {
+      try {
+        // 查找验证码输入框（多种方法）
+        let codeInput = findInputByLabel('验证码') || 
                        findInputByLabel('Verification Code') || 
+                       findInputByLabel('Code') ||
                        findInputByPlaceholder('验证码') ||
                        findInputByPlaceholder('Verification code') ||
+                       findInputByPlaceholder('Code') ||
                        document.querySelector('input[type="text"][maxlength="6"]') ||
-                       document.querySelector('input[pattern*="[0-9]"]');
-      
-      if (codeInput) {
-        setInputValue(codeInput, code);
-        triggerInputEvent(codeInput);
-        console.log('[Cursor Auto Fill] 验证码已填写:', code);
-        showNotification(`验证码已自动填写: ${code}`);
-      } else {
-        console.warn('[Cursor Auto Fill] 未找到验证码输入框');
+                       document.querySelector('input[type="text"][maxlength="8"]') ||
+                       document.querySelector('input[pattern*="[0-9]"]') ||
+                       document.querySelector('input[name*="code" i]') ||
+                       document.querySelector('input[id*="code" i]');
+        
+        // 如果还没找到，尝试查找所有输入框，选择最可能的
+        if (!codeInput) {
+          const allInputs = Array.from(document.querySelectorAll('input[type="text"]'));
+          // 查找包含数字限制或验证码相关属性的输入框
+          codeInput = allInputs.find(input => 
+            input.maxLength === 6 || 
+            input.maxLength === 8 ||
+            input.pattern && input.pattern.includes('[0-9]') ||
+            input.name && input.name.toLowerCase().includes('code') ||
+            input.id && input.id.toLowerCase().includes('code')
+          );
+        }
+        
+        if (codeInput) {
+          setInputValue(codeInput, code);
+          triggerInputEvent(codeInput);
+          console.log('[Cursor Auto Fill] 验证码已填写:', code);
+          showNotification(`✅ 验证码已自动填写: ${code}`);
+        } else {
+          console.warn('[Cursor Auto Fill] 未找到验证码输入框，等待页面加载...');
+          // 如果没找到，等待一下再试（可能是验证码页面还没加载）
+          setTimeout(tryFillCode, 2000);
+        }
+      } catch (error) {
+        console.error('[Cursor Auto Fill] 填写验证码失败:', error);
         showNotification(`验证码: ${code}（请手动填写）`, 'info');
       }
-    } catch (error) {
-      console.error('[Cursor Auto Fill] 填写验证码失败:', error);
-      showNotification(`验证码: ${code}（请手动填写）`, 'info');
-    }
+    };
+    
+    // 立即尝试，如果失败则等待
+    tryFillCode();
   }
 
   /**

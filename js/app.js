@@ -2006,27 +2006,29 @@ async function openCursorRegisterPage(accountData) {
     
     // 尝试自动填写表单
     try {
-      // 方法1: 通过 postMessage 发送（需要浏览器扩展支持）
-      registerWindow.postMessage({
-        type: 'CURSOR_AUTO_FILL',
-        data: {
-          email: accountData.email,
-          firstName: accountData.firstName,
-          lastName: accountData.lastName,
-          password: accountData.password
-        }
-      }, '*');
-      
-      // 方法2: 直接操作（如果同源或已注入脚本）
+      // 通过 postMessage 发送账号信息（浏览器扩展会监听并自动填写）
       setTimeout(() => {
         try {
-          // 尝试直接操作新窗口的 DOM（需要绕过跨域限制）
-          // 这里我们使用 postMessage，实际填写由浏览器扩展完成
+          registerWindow.postMessage({
+            type: 'CURSOR_AUTO_FILL',
+            data: {
+              email: accountData.email,
+              firstName: accountData.firstName,
+              lastName: accountData.lastName,
+              password: accountData.password
+            }
+          }, '*');
+          
+          console.log('[Cursor] 已发送账号信息到注册页面');
+          
           if (statusText) {
-            statusText.textContent = '已发送填写指令，等待浏览器扩展自动填写...';
+            statusText.textContent = '已发送填写指令，浏览器扩展正在自动填写...';
           }
         } catch (error) {
-          console.warn('直接填写失败，使用辅助窗口:', error);
+          console.error('[Cursor] 发送账号信息失败:', error);
+          if (statusText) {
+            statusText.textContent = '发送失败，请查看辅助窗口手动填写';
+          }
         }
       }, 2000);
       
