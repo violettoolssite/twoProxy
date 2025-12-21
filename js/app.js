@@ -1911,9 +1911,13 @@ async function createCursorAccount() {
       document.getElementById('cursor-lastname').textContent = result.data.lastName;
       document.getElementById('cursor-password').textContent = result.data.password;
       document.getElementById('cursor-token').textContent = result.data.token || '等待登录...';
-      document.getElementById('cursor-account-result').style.display = 'block';
-      document.getElementById('cursor-download-btn').style.display = 'inline-block';
-      document.getElementById('cursor-auto-fill-status').style.display = 'block';
+      const accountResult = document.getElementById('cursor-account-result');
+      const downloadBtn = document.getElementById('cursor-download-btn');
+      const autoFillStatus = document.getElementById('cursor-auto-fill-status');
+      
+      if (accountResult) accountResult.style.display = 'block';
+      if (downloadBtn) downloadBtn.style.display = 'inline-block';
+      if (autoFillStatus) autoFillStatus.style.display = 'block';
       
       showNotify('账号信息已生成！正在打开注册页面...', 'success');
       
