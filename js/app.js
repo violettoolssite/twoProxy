@@ -1984,8 +1984,8 @@ async function waitForCursorLogin(email) {
 // 打开 Cursor 注册页面并自动填写
 async function openCursorRegisterPage(accountData) {
   try {
-    // Cursor 注册页面 URL（需要根据实际情况调整）
-    const registerUrl = 'https://www.cursor.com/signup' || 'https://cursor.sh/signup';
+    // Cursor 注册页面 URL
+    const registerUrl = 'https://authenticator.cursor.sh/sign-up';
     
     // 打开新窗口
     const registerWindow = window.open(registerUrl, '_blank', 'width=800,height=600');
