@@ -33,6 +33,7 @@
 - ✅ 脚本自动改写（如 Ollama 安装脚本）
 - ✅ 自动 URL 转换
 - ✅ 一键复制加速命令
+- ✅ **API Key 程序化访问**（Python/命令行）
 
 ### 🎯 扩展功能
 
@@ -41,7 +42,7 @@
 - ✅ 邀请码系统
 - ✅ 团队成员管理
 - ✅ 个人子域名支持
-- ✅ API Key 管理
+- ✅ **API Key 管理**（已启用文件加速下载 API）
 
 #### 临时邮箱服务
 - ✅ 一键生成临时邮箱
@@ -99,9 +100,15 @@ twoProxy/
 │   └── migrate-verify.sh  # 验证迁移结果
 ├── cloudflare-email-worker.js  # Cloudflare Worker（邮箱服务）
 ├── sponsors.json.example       # 感谢名单数据示例
+├── examples/                   # API 使用示例
+│   ├── python_download.py     # Python 完整示例
+│   ├── python_download_simple.py  # Python 简化示例
+│   ├── test_api.py            # API 测试脚本
+│   └── README.md              # 示例使用文档
 ├── DEPLOYMENT.md               # 完整部署文档
 ├── TWO_SERVER_MIGRATION.md     # 双服务器迁移指南
 ├── MIGRATION_CHECKLIST.md      # 迁移检查清单
+├── API_KEY_USAGE.md            # API Key 使用说明
 └── README.md                   # 项目说明（本文件）
 ```
 
@@ -239,6 +246,8 @@ bash migrate-all.sh
 |------|------|---------|
 | [api/README.md](api/README.md) | 后端API文档 | 后端开发者 |
 | [browser-extension/README.md](browser-extension/README.md) | 浏览器扩展说明 | 前端开发者 |
+| [API_KEY_USAGE.md](API_KEY_USAGE.md) | **🔑 API Key 使用说明** | **开发者/API用户** |
+| [examples/README.md](examples/README.md) | **🐍 Python API 示例代码** | **Python开发者** |
 
 ### 📖 快速导航
 
