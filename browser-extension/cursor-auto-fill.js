@@ -32,42 +32,96 @@
       try {
         // 查找表单字段（根据实际页面结构调整）
         // 方法1: 通过 label 查找
-        const firstNameInput = findInputByLabel('名') || findInputByLabel('First Name') || findInputByPlaceholder('您的名字') || findInputByPlaceholder('Your first name');
-        const lastNameInput = findInputByLabel('姓') || findInputByLabel('Last Name') || findInputByPlaceholder('您的姓氏') || findInputByPlaceholder('Your last name');
-        const emailInput = findInputByLabel('邮箱') || findInputByLabel('Email') || findInputByPlaceholder('您的邮箱地址') || findInputByPlaceholder('Your email address') || document.querySelector('input[type="email"]');
+        let firstNameInput = findInputByLabel('名') || findInputByLabel('First Name') || findInputByPlaceholder('您的名字') || findInputByPlaceholder('Your first name');
+        let lastNameInput = findInputByLabel('姓') || findInputByLabel('Last Name') || findInputByPlaceholder('您的姓氏') || findInputByPlaceholder('Your last name');
+        let emailInput = findInputByLabel('邮箱') || findInputByLabel('Email') || findInputByPlaceholder('您的邮箱地址') || findInputByPlaceholder('Your email address') || document.querySelector('input[type="email"]');
+        
+        // 方法2: 通过 input 的 name 或 id 属性查找
+        if (!firstNameInput) {
+          firstNameInput = document.querySelector('input[name*="first" i]') || 
+                          document.querySelector('input[id*="first" i]') ||
+                          document.querySelector('input[placeholder*="first" i]');
+        }
+        if (!lastNameInput) {
+          lastNameInput = document.querySelector('input[name*="last" i]') || 
+                         document.querySelector('input[id*="last" i]') ||
+                         document.querySelector('input[placeholder*="last" i]');
+        }
+        if (!emailInput) {
+          emailInput = document.querySelector('input[type="email"]') ||
+                      document.querySelector('input[name*="email" i]') ||
+                      document.querySelector('input[id*="email" i]');
+        }
+        
+        // 方法3: 通过表单字段顺序查找（如果前面方法都失败）
+        if (!firstNameInput || !lastNameInput || !emailInput) {
+          const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="email"]:not([readonly])'));
+          console.log('[Cursor Auto Fill] 找到所有输入框:', allInputs.length, allInputs.map(i => ({ 
+            type: i.type, 
+            name: i.name, 
+            id: i.id, 
+            placeholder: i.placeholder 
+          })));
+          
+          if (allInputs.length >= 3) {
+            // 通常第一个是名，第二个是姓，第三个是邮箱
+            if (!firstNameInput) firstNameInput = allInputs[0];
+            if (!lastNameInput) lastNameInput = allInputs[1];
+            if (!emailInput) {
+              // 邮箱可能是第三个，或者查找 type="email" 的
+              emailInput = allInputs.find(i => i.type === 'email') || allInputs[2];
+            }
+          } else if (allInputs.length === 2) {
+            // 如果只有两个字段，可能是名和姓
+            if (!firstNameInput) firstNameInput = allInputs[0];
+            if (!lastNameInput) lastNameInput = allInputs[1];
+          }
+        }
         
         if (firstNameInput && data.firstName) {
           setInputValue(firstNameInput, data.firstName);
           triggerInputEvent(firstNameInput);
           console.log('[Cursor Auto Fill] 已填写名:', data.firstName);
+        } else {
+          console.warn('[Cursor Auto Fill] 未找到名输入框');
         }
         
         if (lastNameInput && data.lastName) {
           setInputValue(lastNameInput, data.lastName);
           triggerInputEvent(lastNameInput);
           console.log('[Cursor Auto Fill] 已填写姓:', data.lastName);
+        } else {
+          console.warn('[Cursor Auto Fill] 未找到姓输入框');
         }
         
         if (emailInput && data.email) {
           setInputValue(emailInput, data.email);
           triggerInputEvent(emailInput);
           console.log('[Cursor Auto Fill] 已填写邮箱:', data.email);
+        } else {
+          console.warn('[Cursor Auto Fill] 未找到邮箱输入框');
         }
         
         // 显示成功提示
-        showNotification('表单已自动填写！请检查信息后点击"继续"按钮');
+        if (firstNameInput && lastNameInput && emailInput) {
+          showNotification('✅ 表单已自动填写！请检查信息后点击"继续"按钮');
+        } else {
+          showNotification('⚠️ 部分字段未找到，请手动填写缺失的字段', 'warning');
+        }
         
       } catch (error) {
         console.error('[Cursor Auto Fill] 填写失败:', error);
-        showNotification('自动填写失败，请手动填写', 'error');
+        showNotification('❌ 自动填写失败，请手动填写', 'error');
       }
     };
     
     // 如果页面已加载，立即填写；否则等待
     if (document.readyState === 'complete') {
-      setTimeout(fillForm, 500);
+      setTimeout(fillForm, 1000);
     } else {
-      window.addEventListener('load', () => setTimeout(fillForm, 500));
+      window.addEventListener('load', () => setTimeout(fillForm, 1000));
+      // 也尝试立即填写（可能页面已经加载但 readyState 还没更新）
+      setTimeout(fillForm, 2000);
     }
   }
 
