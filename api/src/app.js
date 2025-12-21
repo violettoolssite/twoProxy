@@ -14,6 +14,7 @@ const paymentRoutes = require('./routes/payment');
 const internalRoutes = require('./routes/internal');
 const adminRoutes = require('./routes/admin');
 const smsRoutes = require('./routes/sms');
+const downloadRoutes = require('./routes/download');
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sms', smsRoutes);
+app.use('/api/download', downloadRoutes);
 
 // 内部接口（只允许本机访问）
 app.use('/api/internal', (req, res, next) => {
