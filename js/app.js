@@ -1907,13 +1907,18 @@ async function createCursorAccount() {
       
       // 显示账号信息
       document.getElementById('cursor-email').textContent = result.data.email;
-      document.getElementById('cursor-username').textContent = result.data.username;
+      document.getElementById('cursor-firstname').textContent = result.data.firstName;
+      document.getElementById('cursor-lastname').textContent = result.data.lastName;
       document.getElementById('cursor-password').textContent = result.data.password;
       document.getElementById('cursor-token').textContent = result.data.token || '等待登录...';
       document.getElementById('cursor-account-result').style.display = 'block';
       document.getElementById('cursor-download-btn').style.display = 'inline-block';
+      document.getElementById('cursor-auto-fill-status').style.display = 'block';
       
-      showNotify('账号创建成功！', 'success');
+      showNotify('账号信息已生成！正在打开注册页面...', 'success');
+      
+      // 打开 Cursor 注册页面并自动填写
+      await openCursorRegisterPage(result.data);
       
       // 如果还没有 token，等待登录
       if (!result.data.token) {

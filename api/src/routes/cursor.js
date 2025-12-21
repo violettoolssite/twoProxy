@@ -29,15 +29,36 @@ function generateRandomString(length = 12) {
 }
 
 /**
- * 生成随机用户名
+ * 生成随机名字（名和姓）
+ */
+function generateRandomName() {
+  // 英文名字
+  const firstNames = ['James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas', 'Charles',
+    'Mary', 'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 'Susan', 'Jessica', 'Sarah', 'Karen',
+    'Alex', 'Chris', 'Danny', 'Emma', 'Grace', 'Henry', 'Jack', 'Lily', 'Mike', 'Nancy',
+    'Oliver', 'Peter', 'Rachel', 'Sam', 'Tom', 'Victor', 'Wendy', 'Zoe', 'Alice', 'Bob'];
+  
+  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+    'Wilson', 'Anderson', 'Taylor', 'Thomas', 'Hernandez', 'Moore', 'Martin', 'Jackson', 'Thompson', 'White',
+    'Lopez', 'Lee', 'Gonzalez', 'Harris', 'Clark', 'Lewis', 'Robinson', 'Walker', 'Perez', 'Hall',
+    'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green'];
+  
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  
+  return {
+    firstName: firstName,
+    lastName: lastName,
+    fullName: `${firstName} ${lastName}`
+  };
+}
+
+/**
+ * 生成随机用户名（保留用于兼容）
  */
 function generateRandomUsername() {
-  const adjectives = ['swift', 'bright', 'quick', 'smart', 'cool', 'fast', 'sharp', 'bold', 'keen', 'wise'];
-  const nouns = ['dev', 'coder', 'hacker', 'builder', 'maker', 'creator', 'engineer', 'wizard', 'ninja', 'guru'];
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const num = Math.floor(Math.random() * 1000);
-  return `${adj}${noun}${num}`;
+  const name = generateRandomName();
+  return name.fullName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000);
 }
 
 /**
@@ -84,7 +105,7 @@ router.post('/create-account', async (req, res) => {
   try {
     // 生成随机账号信息
     const email = generateRandomEmail();
-    const username = generateRandomUsername();
+    const name = generateRandomName();
     const password = generateRandomPassword();
     
     // 调用 Cursor API 注册账号
@@ -96,7 +117,9 @@ router.post('/create-account', async (req, res) => {
       // 尝试注册（需要根据实际 API 调整）
       const registerResponse = await axios.post(CURSOR_REGISTER_URL, {
         email: email,
-        username: username,
+        firstName: name.firstName,
+        lastName: name.lastName,
+        username: name.fullName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000),
         password: password
       }, {
         timeout: 30000,
@@ -149,7 +172,10 @@ router.post('/create-account', async (req, res) => {
     const accountData = {
       id: accountId,
       email: email,
-      username: username,
+      firstName: name.firstName,
+      lastName: name.lastName,
+      fullName: name.fullName,
+      username: name.fullName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000),
       password: password,
       token: token,
       createdAt: new Date().toISOString(),
@@ -168,7 +194,10 @@ router.post('/create-account', async (req, res) => {
       data: {
         id: accountId,
         email: email,
-        username: username,
+        firstName: name.firstName,
+        lastName: name.lastName,
+        fullName: name.fullName,
+        username: accountData.username,
         password: password,
         token: token,
         registered: registerSuccess,
@@ -247,6 +276,9 @@ router.get('/check-login', async (req, res) => {
       success: true,
       data: {
         email: accountData.email,
+        firstName: accountData.firstName,
+        lastName: accountData.lastName,
+        fullName: accountData.fullName,
         username: accountData.username,
         token: accountData.token,
         hasToken: !!accountData.token
@@ -267,9 +299,9 @@ router.get('/check-login', async (req, res) => {
  */
 router.post('/download-config', (req, res) => {
   try {
-    const { email, username, password, token } = req.body;
+    const { email, firstName, lastName, fullName, username, password, token } = req.body;
     
-    if (!email || !username || !password) {
+    if (!email || !firstName || !lastName || !password) {
       return res.status(400).json({
         success: false,
         error: '缺少必要的账号信息'
@@ -279,7 +311,10 @@ router.post('/download-config', (req, res) => {
     // 生成配置文件内容
     const config = {
       email: email,
-      username: username,
+      firstName: firstName,
+      lastName: lastName,
+      fullName: fullName || `${firstName} ${lastName}`,
+      username: username || null,
       password: password,
       token: token || null,
       createdAt: new Date().toISOString(),
