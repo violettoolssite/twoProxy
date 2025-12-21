@@ -6,8 +6,60 @@
 
 - `python_download.py` - 完整的 Python 下载示例（支持命令行）
 - `python_download_simple.py` - 简化的 Python 示例
+- `curl_download.sh` - **Bash/curl 下载脚本**（推荐命令行使用）
+- `test_api.py` - Python API 测试脚本
 
 ## 🐍 Python 示例
+
+## 🔧 Bash/curl 示例（推荐）
+
+### 快速开始
+
+1. **设置 API Key**
+   ```bash
+   export MIRROR_API_KEY="your-api-key-here"
+   ```
+
+2. **使用下载脚本**
+   ```bash
+   chmod +x examples/curl_download.sh
+   ./examples/curl_download.sh https://github.com/ollama/ollama/releases/download/v0.13.4/ollama-linux-amd64.tgz
+   ```
+
+3. **手动使用 curl**
+   ```bash
+   # 1. 获取加速地址
+   ACCELERATED_URL=$(curl -s -X POST \
+     "https://mirror.yljdteam.com/api/download/generate" \
+     -H "X-API-Key: $MIRROR_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"url": "https://github.com/ollama/ollama/releases/download/v0.13.4/ollama-linux-amd64.tgz"}' \
+     | grep -o '"acceleratedUrl":"[^"]*' | cut -d'"' -f4)
+   
+   # 2. 下载文件
+   curl -L "$ACCELERATED_URL" -o ollama-linux-amd64.tgz
+   ```
+
+### 完整示例
+
+```bash
+#!/bin/bash
+API_KEY="your-api-key-here"
+ORIGINAL_URL="https://github.com/ollama/ollama/releases/download/v0.13.4/ollama-linux-amd64.tgz"
+
+# 获取加速地址
+ACCELERATED_URL=$(curl -s -X POST \
+  "https://mirror.yljdteam.com/api/download/generate" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"$ORIGINAL_URL\"}" \
+  | grep -o '"acceleratedUrl":"[^"]*' | cut -d'"' -f4)
+
+# 下载文件
+curl -L --progress-bar "$ACCELERATED_URL" -o ollama-linux-amd64.tgz
+```
+
+---
 
 ### 快速开始
 
