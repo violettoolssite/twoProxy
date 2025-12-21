@@ -1981,11 +1981,17 @@ async function waitForCursorLogin(email) {
   setTimeout(checkLogin, 10000); // 10秒后开始检查
 }
 
-// 打开 Cursor 注册页面并显示账号信息
+// 打开 Cursor 注册页面并自动填写
 async function openCursorRegisterPage(accountData) {
   try {
     // Cursor 注册页面 URL
     const registerUrl = 'https://authenticator.cursor.sh/sign-up';
+    
+    // 更新状态
+    const statusText = document.getElementById('cursor-fill-status-text');
+    if (statusText) {
+      statusText.textContent = '正在打开注册页面...';
+    }
     
     // 打开新窗口
     const registerWindow = window.open(registerUrl, '_blank', 'width=1000,height=700');
@@ -1995,18 +2001,40 @@ async function openCursorRegisterPage(accountData) {
       return;
     }
     
-    // 更新状态
-    const statusText = document.getElementById('cursor-fill-status-text');
-    if (statusText) {
-      statusText.textContent = '注册页面已打开，请查看下方账号信息进行填写...';
-    }
+    // 等待页面加载
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // 等待页面加载后，打开一个辅助窗口显示账号信息
-    setTimeout(() => {
-      // 创建辅助窗口显示账号信息
-      const helperWindow = window.open('', '_blank', 'width=500,height=600');
-      if (helperWindow) {
-        helperWindow.document.write(`
+    // 尝试自动填写表单
+    try {
+      // 方法1: 通过 postMessage 发送（需要浏览器扩展支持）
+      registerWindow.postMessage({
+        type: 'CURSOR_AUTO_FILL',
+        data: {
+          email: accountData.email,
+          firstName: accountData.firstName,
+          lastName: accountData.lastName,
+          password: accountData.password
+        }
+      }, '*');
+      
+      // 方法2: 直接操作（如果同源或已注入脚本）
+      setTimeout(() => {
+        try {
+          // 尝试直接操作新窗口的 DOM（需要绕过跨域限制）
+          // 这里我们使用 postMessage，实际填写由浏览器扩展完成
+          if (statusText) {
+            statusText.textContent = '已发送填写指令，等待浏览器扩展自动填写...';
+          }
+        } catch (error) {
+          console.warn('直接填写失败，使用辅助窗口:', error);
+        }
+      }, 2000);
+      
+      // 打开辅助窗口显示账号信息（备用方案）
+      setTimeout(() => {
+        const helperWindow = window.open('', '_blank', 'width=500,height=600');
+        if (helperWindow) {
+          helperWindow.document.write(`
           <!DOCTYPE html>
           <html lang="zh-CN">
           <head>

@@ -1,55 +1,39 @@
-const DEFAULTS = {
-  // 仅保留 Release 文件加速相关配置，始终启用
-  // 默认使用新的 ghproxy 前缀
-  releaseBase: "https://violetteam.cloud/ghproxy/github"
-};
+/**
+ * Popup 脚本
+ */
 
-function qs(id) {
-  return document.getElementById(id);
-}
-
-function setStatus(msg, ok = true) {
-  const el = qs("status");
-  el.textContent = msg;
-  el.className = ok ? "status ok" : "status err";
-}
-
-function loadSettings() {
-  chrome.storage.sync.get(DEFAULTS, (s) => {
-    qs("releaseBase").value = s.releaseBase;
-    // 始终启用，无需开关
-    qs("enableRelease").checked = true;
+document.addEventListener('DOMContentLoaded', () => {
+  const statusEl = document.getElementById('status');
+  const activateBtn = document.getElementById('activate-btn');
+  
+  // 检查当前标签页是否是 Cursor 注册页面
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const currentTab = tabs[0];
+    if (currentTab.url && currentTab.url.includes('authenticator.cursor.sh')) {
+      statusEl.textContent = '✅ 已检测到 Cursor 注册页面';
+      statusEl.classList.add('active');
+      activateBtn.disabled = false;
+      activateBtn.textContent = '等待账号信息...';
+      
+      // 监听来自 Mirror 网站的消息
+      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.type === 'CURSOR_ACCOUNT_DATA') {
+          // 发送账号信息到当前标签页
+          chrome.tabs.sendMessage(currentTab.id, {
+            type: 'CURSOR_AUTO_FILL',
+            data: message.data
+          });
+          
+          statusEl.textContent = '✅ 账号信息已发送，正在自动填写...';
+          activateBtn.textContent = '已激活';
+        }
+      });
+    } else {
+      statusEl.textContent = '⚠️ 请先打开 Cursor 注册页面';
+      activateBtn.textContent = '打开注册页面';
+      activateBtn.onclick = () => {
+        chrome.tabs.create({ url: 'https://authenticator.cursor.sh/sign-up' });
+      };
+    }
   });
-}
-
-function saveAndApply() {
-  const settings = {
-    releaseBase: qs("releaseBase").value.trim() || DEFAULTS.releaseBase
-  };
-
-  chrome.storage.sync.set(settings, () => {
-    chrome.runtime.sendMessage({ type: "applyRules" }, (resp) => {
-      if (resp?.ok) {
-        setStatus("已保存并应用重写规则", true);
-      } else {
-        setStatus("应用规则失败：" + (resp?.error || "未知错误"), false);
-      }
-    });
-  });
-}
-
-function resetDefaults() {
-  chrome.storage.sync.set(DEFAULTS, () => {
-    loadSettings();
-    chrome.runtime.sendMessage({ type: "applyRules" }, () => {
-      setStatus("已恢复默认并应用", true);
-    });
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  loadSettings();
-  qs("saveBtn").addEventListener("click", saveAndApply);
-  qs("resetBtn").addEventListener("click", resetDefaults);
 });
-
