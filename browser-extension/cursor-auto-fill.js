@@ -225,10 +225,26 @@
   // 如果页面已经加载，立即尝试填写（可能是刷新后的情况）
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('[Cursor Auto Fill] Content script 已加载');
+      console.log('[Cursor Auto Fill] Content script 已加载，页面状态:', document.readyState);
     });
   } else {
-    console.log('[Cursor Auto Fill] Content script 已加载');
+    console.log('[Cursor Auto Fill] Content script 已加载，页面状态:', document.readyState);
   }
+  
+  // 定期检查是否有新字段出现（用于动态加载的表单）
+  let checkInterval = null;
+  const startFieldChecker = () => {
+    if (checkInterval) return;
+    
+    checkInterval = setInterval(() => {
+      // 检查是否有输入框但还没填写
+      const inputs = document.querySelectorAll('input[type="text"], input[type="email"]');
+      if (inputs.length > 0) {
+        console.log('[Cursor Auto Fill] 检测到输入框，等待填写指令...');
+      }
+    }, 2000);
+  };
+  
+  startFieldChecker();
 })();
 
