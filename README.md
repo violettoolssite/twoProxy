@@ -254,6 +254,7 @@ bash migrate-all.sh
 - **新手入门**: 从 [DEPLOYMENT.md](DEPLOYMENT.md) 开始
 - **生产部署**: 查看 [TWO_SERVER_MIGRATION.md](TWO_SERVER_MIGRATION.md)
 - **功能开发**: 参考 [api/README.md](api/README.md)
+- **API 使用**: 查看 [API_KEY_USAGE.md](API_KEY_USAGE.md) 和 [examples/README.md](examples/README.md)
 - **管理运维**: 查阅 [ADMIN_SMS_GUIDE.md](ADMIN_SMS_GUIDE.md) 和 [SMS_AUTO_RELEASE.md](SMS_AUTO_RELEASE.md)
 - **迁移升级**: 使用 [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md)
 
