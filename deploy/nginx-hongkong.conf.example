@@ -53,6 +53,19 @@ server {
         try_files $uri $uri/ /admin/index.html;
     }
 
+    # 示例代码目录（静态文件）
+    location ^~ /examples/ {
+        root /var/www/mirror;
+        try_files $uri =404;
+        # 根据文件扩展名设置 Content-Type
+        location ~ \.md$ {
+            add_header Content-Type text/markdown;
+        }
+        location ~ \.(sh|py)$ {
+            add_header Content-Type text/plain;
+        }
+    }
+
     # 后端 API 代理（用户系统 / 订阅 / 支付）
     location ^~ /api/ {
         proxy_pass http://127.0.0.1:3000;
@@ -215,7 +228,7 @@ server {
             set $sub_path "/";
         }
         # 排除已知的非 GitHub 路径（添加更多排除项，避免误匹配）
-        if ($owner_repo ~ ^(css|js|file|assets|api|user|admin|_next|static|favicon\.ico|github|search|v2|gh|sponsors|hunshcn|gh-proxy|violetteam|mirror)) {
+        if ($owner_repo ~ ^(css|js|file|assets|api|user|admin|_next|static|favicon\.ico|github|search|v2|gh|sponsors|hunshcn|gh-proxy|violetteam|mirror|examples)) {
             break;
         }
         # 代理到 GitHub
