@@ -7,11 +7,15 @@
 (function() {
   'use strict';
 
-  // Live2D Widget 配置
-  window.L2Dwidget = window.L2Dwidget || {};
-  
-  // 配置Live2D角色
-  window.L2Dwidget.init({
+  // 等待 L2Dwidget 加载完成
+  function initLive2D() {
+    if (typeof window.L2Dwidget === 'undefined' || typeof window.L2Dwidget.init !== 'function') {
+      setTimeout(initLive2D, 100);
+      return;
+    }
+
+    // 配置Live2D角色
+    window.L2Dwidget.init({
     model: {
       // 使用默认模型，也可以指定其他模型
       jsonPath: 'https://unpkg.com/live2d-widget-model-shizuku@1.0.5/assets/shizuku.model.json',
@@ -48,14 +52,21 @@
     }
   });
 
-  // 如果默认模型加载失败，尝试备用模型
-  setTimeout(() => {
-    const live2dElement = document.getElementById('live2d-widget');
-    if (!live2dElement || live2dElement.children.length === 0) {
-      console.warn('Live2D默认模型加载失败，尝试备用模型');
-      // 可以在这里添加备用模型配置
-    }
-  }, 5000);
+    // 如果默认模型加载失败，尝试备用模型
+    setTimeout(() => {
+      const live2dElement = document.getElementById('live2d-widget');
+      if (!live2dElement || live2dElement.children.length === 0) {
+        console.warn('Live2D默认模型加载失败，尝试备用模型');
+        // 可以在这里添加备用模型配置
+      }
+    }, 5000);
+  }
 
+  // 延迟初始化，确保 autoload.js 已加载
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLive2D);
+  } else {
+    setTimeout(initLive2D, 500);
+  }
 })();
 
