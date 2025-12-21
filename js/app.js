@@ -1,4 +1,4 @@
-const pages = ["github", "docker", "download", "email", "sms", "sponsors"];
+const pages = ["github", "docker", "download", "email", "sms", "cursor", "sponsors"];
 
 function showPage(name) {
   pages.forEach(p => {
@@ -1863,5 +1863,154 @@ function updateSmsUsageDisplay(usage) {
   } else {
     usageInfo.style.display = 'none';
     limitWarning.style.display = 'block';
+  }
+}
+
+/* ============================================
+ * YLJD Cursor 一键切换账号功能
+ * ============================================ */
+let cursorAccountData = null;
+
+// 创建 Cursor 账号
+async function createCursorAccount() {
+  const btn = document.getElementById('cursor-create-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '创建中...';
+  }
+  
+  try {
+    showLoading('正在创建 Cursor 账号...');
+    
+    const response = await fetch('/api/cursor/create-account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      cursorAccountData = result.data;
+      
+      // 显示账号信息
+      document.getElementById('cursor-email').textContent = result.data.email;
+      document.getElementById('cursor-username').textContent = result.data.username;
+      document.getElementById('cursor-password').textContent = result.data.password;
+      document.getElementById('cursor-token').textContent = result.data.token || '等待登录...';
+      document.getElementById('cursor-account-result').style.display = 'block';
+      document.getElementById('cursor-download-btn').style.display = 'inline-block';
+      
+      showNotify('账号创建成功！', 'success');
+      
+      // 如果还没有 token，等待登录
+      if (!result.data.token) {
+        await waitForCursorLogin(result.data.email);
+      }
+    } else {
+      showNotify(result.message || '创建账号失败', 'error');
+    }
+  } catch (error) {
+    console.error('创建 Cursor 账号失败:', error);
+    showNotify('网络错误，请稍后重试', 'error');
+  } finally {
+    hideLoading();
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '一键创建账号';
+    }
+  }
+}
+
+// 等待 Cursor 登录完成
+async function waitForCursorLogin(email) {
+  let attempts = 0;
+  const maxAttempts = 30; // 最多等待30次（约5分钟）
+  
+  const checkLogin = async () => {
+    attempts++;
+    
+    try {
+      const response = await fetch(`/api/cursor/check-login?email=${encodeURIComponent(email)}`, {
+        method: 'GET'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data && result.data.token) {
+        cursorAccountData.token = result.data.token;
+        document.getElementById('cursor-token').textContent = result.data.token;
+        showNotify('登录成功！已获取访问凭证', 'success');
+        return;
+      }
+      
+      if (attempts < maxAttempts) {
+        setTimeout(checkLogin, 10000); // 每10秒检查一次
+      } else {
+        showNotify('登录超时，请手动登录', 'warning');
+      }
+    } catch (error) {
+      console.error('检查登录状态失败:', error);
+      if (attempts < maxAttempts) {
+        setTimeout(checkLogin, 10000);
+      }
+    }
+  };
+  
+  setTimeout(checkLogin, 10000); // 10秒后开始检查
+}
+
+// 复制密码
+function copyCursorPassword() {
+  if (!cursorAccountData || !cursorAccountData.password) {
+    showNotify('没有可复制的密码', 'warning');
+    return;
+  }
+  
+  const textarea = document.createElement('textarea');
+  textarea.value = cursorAccountData.password;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+  showNotify('密码已复制', 'success');
+}
+
+// 下载配置文件
+async function downloadCursorConfig() {
+  if (!cursorAccountData) {
+    showNotify('请先创建账号', 'warning');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/cursor/download-config', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(cursorAccountData)
+    });
+    
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cursor-config.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      showNotify('配置文件已下载', 'success');
+    } else {
+      showNotify('下载失败', 'error');
+    }
+  } catch (error) {
+    console.error('下载配置文件失败:', error);
+    showNotify('网络错误，请稍后重试', 'error');
   }
 }

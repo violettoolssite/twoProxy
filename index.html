@@ -12,7 +12,7 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
   <title>Mirror 加速站</title>
-  <link rel="stylesheet" href="./css/style.css?v=20250120" />
+  <link rel="stylesheet" href="./css/style.css?v=20250121" />
   <!-- Live2D Widget -->
   <script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@latest/autoload.js"></script>
   <script src="./js/live2d-config.js?v=20250120"></script>
@@ -32,6 +32,7 @@
     <a href="#/download" id="nav-download">文件下载</a>
     <a href="#/email" id="nav-email">临时邮箱</a>
     <a href="#/sms" id="nav-sms">短信接码</a>
+    <a href="#/cursor" id="nav-cursor">YLJD Cursor</a>
     <a href="#/sponsors" id="nav-sponsors">感谢名单</a>
     <a href="/user/" id="nav-user" class="btn-login">登录 / 注册</a>
   </nav>
@@ -513,6 +514,86 @@ sudo systemctl restart docker</pre>
       <div style="margin-top: 16px; padding: 12px; background: rgba(250, 204, 21, 0.1); border-radius: 6px; border-left: 3px solid #facc15;">
         <p style="font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 0;">
           <strong>使用提示：</strong>每个号码有效期约10-15分钟，请及时查看验证码。如果长时间未收到验证码，可以释放号码后重新获取。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- YLJD Cursor 一键切换账号 -->
+  <section class="card glass" id="page-cursor" style="display: none;">
+    <div class="card-header">
+      <div>
+        <p class="eyebrow">软件下载</p>
+        <h2>YLJD Cursor</h2>
+      </div>
+      <div class="tag purple">Cursor</div>
+    </div>
+    
+    <div class="card-content">
+      <p style="font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 16px;">
+        一键切换 Cursor 软件中的账号，使用 logincursor.xyz 邮箱自动注册并登录到 Cursor。
+      </p>
+      
+      <!-- 功能说明 -->
+      <div style="margin-bottom: 16px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border-left: 3px solid #3b82f6;">
+        <p style="font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 8px;">
+          <strong>💡 功能说明：</strong>
+        </p>
+        <ul style="font-size: 12px; color: var(--text); line-height: 1.8; padding-left: 20px; margin-bottom: 0;">
+          <li>自动生成随机邮箱（logincursor.xyz 域名）</li>
+          <li>自动生成随机用户名和密码</li>
+          <li>自动注册 Cursor 账号</li>
+          <li>自动登录并获取访问凭证</li>
+          <li>一键下载配置文件或脚本</li>
+        </ul>
+      </div>
+      
+      <!-- 账号信息显示 -->
+      <div id="cursor-account-result" style="display: none; margin-bottom: 16px; padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; border-left: 4px solid #22c55e;">
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">邮箱：</div>
+          <div style="font-size: 16px; font-weight: bold; color: #22c55e; font-family: monospace;" id="cursor-email"></div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">用户名：</div>
+          <div style="font-size: 16px; font-weight: bold; color: #22c55e; font-family: monospace;" id="cursor-username"></div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">密码：</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 16px; font-weight: bold; color: #22c55e; font-family: monospace;" id="cursor-password"></div>
+            <button class="btn ghost" onclick="copyCursorPassword()" style="font-size: 12px; padding: 4px 8px;">复制</button>
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(34, 197, 94, 0.3);">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">访问凭证：</div>
+          <div style="font-size: 12px; font-family: monospace; color: var(--text); word-break: break-all; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;" id="cursor-token"></div>
+        </div>
+      </div>
+      
+      <!-- 操作按钮 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button class="btn primary" onclick="createCursorAccount()" style="flex: 1;" id="cursor-create-btn">一键创建账号</button>
+        <button class="btn ghost" onclick="downloadCursorConfig()" style="flex: 0.6; display: none;" id="cursor-download-btn">下载配置</button>
+      </div>
+      
+      <!-- 使用说明 -->
+      <div style="margin-top: 16px; padding: 12px; background: rgba(250, 204, 21, 0.1); border-radius: 6px; border-left: 3px solid #facc15;">
+        <p style="font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 8px;">
+          <strong>📝 使用说明：</strong>
+        </p>
+        <ol style="font-size: 12px; color: var(--text); line-height: 1.8; padding-left: 20px; margin-bottom: 0;">
+          <li>点击"一键创建账号"按钮，系统将自动生成账号并注册</li>
+          <li>等待注册完成，系统会自动登录并获取访问凭证</li>
+          <li>下载配置文件或脚本，在 Cursor 软件中使用</li>
+          <li>配置文件包含登录凭证，请妥善保管</li>
+        </ol>
+      </div>
+      
+      <!-- 注意事项 -->
+      <div style="margin-top: 16px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; border-left: 3px solid #ef4444;">
+        <p style="font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 0;">
+          <strong>⚠️ 注意事项：</strong>本功能仅用于技术研究和学习目的。请遵守 Cursor 的服务条款，不要用于任何违法或不当用途。账号信息请妥善保管，不要泄露给他人。
         </p>
       </div>
     </div>
