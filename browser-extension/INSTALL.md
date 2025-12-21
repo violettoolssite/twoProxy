@@ -4,8 +4,10 @@
 
 ### Chrome/Edge 浏览器
 
-1. **下载扩展文件**
-   - 确保已下载 `browser-extension` 文件夹中的所有文件
+1. **准备扩展文件**
+   - 进入 `browser-extension` 文件夹
+   - 将 `manifest-cursor.json` 复制为 `manifest.json`（或重命名）
+   - 确保 `cursor-auto-fill.js` 文件存在
 
 2. **打开扩展管理页面**
    - Chrome: 访问 `chrome://extensions/`
@@ -22,21 +24,28 @@
 5. **确认安装**
    - 扩展图标应该出现在浏览器工具栏
    - 扩展名称：YLJD Cursor 自动填写助手
+   - 如果提示缺少图标文件，可以忽略（不影响功能）
 
 ## 🚀 使用方法
 
 1. **打开 Cursor 注册页面**
    - 访问 `https://authenticator.cursor.sh/sign-up`
+   - 或者让 Mirror 网站自动打开
 
 2. **在 Mirror 网站创建账号**
-   - 访问 Mirror 网站
-   - 点击"YLJD Cursor"
+   - 访问 Mirror 网站：`https://mirror.yljdteam.com`
+   - 点击导航栏中的"YLJD Cursor"
    - 点击"一键创建账号并打开注册页面"
 
-3. **自动填写**
-   - 扩展会自动检测注册页面
-   - 自动填写名、姓、邮箱
-   - 自动填写验证码
+3. **自动填写流程**
+   - Mirror 网站会打开 Cursor 注册页面
+   - 扩展会自动检测并填写表单：
+     - ✅ 自动填写"名"（First Name）
+     - ✅ 自动填写"姓"（Last Name）
+     - ✅ 自动填写"邮箱"（Email）
+   - 点击"继续"按钮
+   - 等待验证码邮件
+   - 扩展会自动检测并填写验证码
 
 ## ⚙️ 工作原理
 
