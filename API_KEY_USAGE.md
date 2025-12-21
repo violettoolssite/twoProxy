@@ -106,37 +106,59 @@ curl -H "X-API-Key: your-api-key" \
 // 使用 API Key 获取手机号（替代 JWT Token）
 ```
 
+## ✅ 已启用的功能
+
+### 文件加速下载 API
+
+- ✅ **POST /api/download/generate** - 生成加速地址
+- ✅ **GET /api/download/generate** - 生成加速地址（GET方式）
+- ✅ 使用 API Key 认证
+- ✅ 支持 GitHub 和其他 HTTPS 链接
+- ✅ Python 示例代码已提供
+
 ## 📝 当前限制
 
-1. **未启用**：API Key 认证中间件已实现，但没有路由使用它
-2. **无文档**：缺少 API 使用文档和示例
-3. **无限制**：如果启用，需要配置 API 调用限制
+1. **部分功能已启用**：文件加速下载 API 已可用
+2. **其他功能待开发**：GitHub 搜索、Docker 搜索等 API 待实现
+3. **API 调用限制**：如果配置了 `api_daily_limit`，会有每日调用限制
 
-## 🔄 启用步骤
+## ✅ 已实现的功能
 
-如果需要启用 API Key 功能，需要：
+### 文件加速下载 API
 
-1. **创建 API 路由**
-   ```javascript
-   // api/src/routes/api.js
-   const { authenticateApiKey } = require('../middleware/auth');
-   
-   router.get('/download/generate', authenticateApiKey, async (req, res) => {
-     // 生成加速地址的逻辑
-   });
-   ```
+**Python 使用示例：**
 
-2. **注册路由**
-   ```javascript
-   // api/src/app.js
-   const apiRoutes = require('./routes/api');
-   app.use('/api/v1', apiRoutes);
-   ```
+```python
+import requests
 
-3. **更新文档**
-   - 添加 API 使用文档
-   - 提供代码示例
-   - 说明认证方式
+# 设置 API Key
+API_KEY = "your-api-key-here"
+API_BASE = "https://mirror.yljdteam.com"
+
+# 获取加速地址
+response = requests.post(
+    f"{API_BASE}/api/download/generate",
+    json={"url": "https://example.com/file.zip"},
+    headers={"X-API-Key": API_KEY}
+)
+
+result = response.json()
+if result.get("success"):
+    accelerated_url = result["data"]["acceleratedUrl"]
+    print(f"加速地址: {accelerated_url}")
+```
+
+**命令行使用：**
+
+```bash
+# 设置环境变量
+export MIRROR_API_KEY="your-api-key-here"
+
+# 使用 Python 脚本
+python examples/python_download.py https://example.com/file.zip
+```
+
+**详细文档：** 查看 `examples/README.md`
 
 ## 💬 用户提示
 
