@@ -1981,57 +1981,215 @@ async function waitForCursorLogin(email) {
   setTimeout(checkLogin, 10000); // 10秒后开始检查
 }
 
-// 打开 Cursor 注册页面并自动填写
+// 打开 Cursor 注册页面并显示账号信息
 async function openCursorRegisterPage(accountData) {
   try {
     // Cursor 注册页面 URL
     const registerUrl = 'https://authenticator.cursor.sh/sign-up';
     
     // 打开新窗口
-    const registerWindow = window.open(registerUrl, '_blank', 'width=800,height=600');
+    const registerWindow = window.open(registerUrl, '_blank', 'width=1000,height=700');
     
     if (!registerWindow) {
       showNotify('无法打开注册页面，请检查浏览器弹窗设置', 'warning');
       return;
     }
     
-    // 等待页面加载
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
     // 更新状态
     const statusText = document.getElementById('cursor-fill-status-text');
     if (statusText) {
-      statusText.textContent = '正在填写表单...';
+      statusText.textContent = '注册页面已打开，请查看下方账号信息进行填写...';
     }
     
-    // 尝试自动填写表单（需要等待页面完全加载）
+    // 等待页面加载后，打开一个辅助窗口显示账号信息
     setTimeout(() => {
-      try {
-        // 通过 postMessage 发送账号信息到新窗口
-        registerWindow.postMessage({
-          type: 'CURSOR_AUTO_FILL',
-          data: {
-            email: accountData.email,
-            firstName: accountData.firstName,
-            lastName: accountData.lastName,
-            password: accountData.password
-          }
-        }, '*');
-        
-        // 更新状态
-        if (statusText) {
-          statusText.textContent = '表单已填写，等待验证码...';
-        }
-        
-        // 开始监听验证码
-        startCursorVerificationCodeListener(accountData.email, registerWindow);
-      } catch (error) {
-        console.error('自动填写失败:', error);
-        if (statusText) {
-          statusText.textContent = '自动填写失败，请手动填写';
-        }
+      // 创建辅助窗口显示账号信息
+      const helperWindow = window.open('', '_blank', 'width=500,height=600');
+      if (helperWindow) {
+        helperWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="zh-CN">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Cursor 账号信息 - 请复制填写</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 20px;
+                color: #333;
+              }
+              .container {
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                max-width: 450px;
+                margin: 0 auto;
+              }
+              h2 {
+                color: #667eea;
+                margin-bottom: 20px;
+                font-size: 20px;
+              }
+              .info-item {
+                margin-bottom: 16px;
+              }
+              .info-label {
+                font-size: 12px;
+                color: #666;
+                margin-bottom: 4px;
+                font-weight: 500;
+              }
+              .info-value {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #f5f5f5;
+                padding: 10px 12px;
+                border-radius: 6px;
+                font-family: monospace;
+                font-size: 14px;
+              }
+              .copy-btn {
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: background 0.2s;
+              }
+              .copy-btn:hover {
+                background: #5568d3;
+              }
+              .copy-btn:active {
+                background: #4457c2;
+              }
+              .instructions {
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 12px;
+                border-radius: 4px;
+                margin-top: 20px;
+                font-size: 13px;
+                line-height: 1.6;
+              }
+              .instructions ol {
+                margin-left: 20px;
+                margin-top: 8px;
+              }
+              .instructions li {
+                margin-bottom: 4px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2>📋 Cursor 账号信息</h2>
+              
+              <div class="info-item">
+                <div class="info-label">名（First Name）</div>
+                <div class="info-value">
+                  <span id="first-name">${accountData.firstName}</span>
+                  <button class="copy-btn" onclick="copyText('${accountData.firstName}')">复制</button>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <div class="info-label">姓（Last Name）</div>
+                <div class="info-value">
+                  <span id="last-name">${accountData.lastName}</span>
+                  <button class="copy-btn" onclick="copyText('${accountData.lastName}')">复制</button>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <div class="info-label">邮箱（Email）</div>
+                <div class="info-value">
+                  <span id="email">${accountData.email}</span>
+                  <button class="copy-btn" onclick="copyText('${accountData.email}')">复制</button>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <div class="info-label">密码（Password）</div>
+                <div class="info-value">
+                  <span id="password">${accountData.password}</span>
+                  <button class="copy-btn" onclick="copyText('${accountData.password}')">复制</button>
+                </div>
+              </div>
+              
+              <div class="instructions">
+                <strong>📝 使用说明：</strong>
+                <ol>
+                  <li>在 Cursor 注册页面依次填写：名、姓、邮箱</li>
+                  <li>点击"继续"按钮</li>
+                  <li>等待接收验证码邮件</li>
+                  <li>验证码会自动检测并显示在这里</li>
+                </ol>
+              </div>
+              
+              <div id="verification-code" style="display: none; margin-top: 20px; padding: 12px; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
+                <div style="font-size: 12px; color: #666; margin-bottom: 4px;">验证码：</div>
+                <div style="font-size: 24px; font-weight: bold; color: #28a745; font-family: monospace; text-align: center;" id="code-value"></div>
+                <button class="copy-btn" onclick="copyCode()" style="width: 100%; margin-top: 8px;">复制验证码</button>
+              </div>
+            </div>
+            
+            <script>
+              function copyText(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                // 显示复制成功提示
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '已复制！';
+                btn.style.background = '#28a745';
+                setTimeout(() => {
+                  btn.textContent = originalText;
+                  btn.style.background = '#667eea';
+                }, 1000);
+              }
+              
+              function copyCode() {
+                const code = document.getElementById('code-value').textContent;
+                copyText(code);
+              }
+              
+              // 监听来自父窗口的验证码消息
+              window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'CURSOR_VERIFICATION_CODE') {
+                  const code = event.data.code;
+                  document.getElementById('code-value').textContent = code;
+                  document.getElementById('verification-code').style.display = 'block';
+                  
+                  // 自动复制验证码
+                  setTimeout(() => {
+                    copyText(code);
+                  }, 500);
+                }
+              });
+            </script>
+          </body>
+          </html>
+        `);
+        helperWindow.document.close();
       }
-    }, 3000);
+      
+      // 开始监听验证码
+      startCursorVerificationCodeListener(accountData.email, helperWindow);
+    }, 2000);
     
   } catch (error) {
     console.error('打开注册页面失败:', error);
@@ -2073,23 +2231,25 @@ async function startCursorVerificationCodeListener(email, registerWindow) {
               statusTextEl.textContent = `验证码已收到: ${code}，正在自动填写...`;
             }
             
-            // 尝试自动填写验证码到注册页面
+            // 发送验证码到辅助窗口
             try {
-              registerWindow.postMessage({
-                type: 'CURSOR_FILL_CODE',
-                code: code
-              }, '*');
+              if (registerWindow && !registerWindow.closed) {
+                registerWindow.postMessage({
+                  type: 'CURSOR_VERIFICATION_CODE',
+                  code: code
+                }, '*');
+              }
               
-              showNotify(`验证码已自动填写: ${code}`, 'success');
+              showNotify(`验证码已收到: ${code}，请查看辅助窗口`, 'success');
               
               // 更新状态
               if (statusTextEl) {
-                statusTextEl.textContent = `验证码已填写: ${code}`;
+                statusTextEl.textContent = `验证码已收到: ${code}，请查看辅助窗口复制`;
               }
               
               return; // 找到验证码，停止检查
             } catch (error) {
-              console.error('自动填写验证码失败:', error);
+              console.error('发送验证码失败:', error);
             }
           }
         }
