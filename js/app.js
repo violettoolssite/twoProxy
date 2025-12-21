@@ -160,6 +160,17 @@ async function getUserSubdomain() {
 }
 
 // 通知模态框（替代 alert）
+// 显示加载提示
+function showLoading(message = '加载中...') {
+  showNotify(message, 'info');
+}
+
+// 隐藏加载提示（实际上不需要，因为 showNotify 会自动关闭）
+function hideLoading() {
+  // 可以在这里添加隐藏加载指示器的逻辑
+  // 目前使用 showNotify，它会自动关闭，所以这里可以为空
+}
+
 function showNotify(message, type = "info") {
   const modal = document.getElementById("notify-modal");
   const iconEl = document.getElementById("notify-icon");
