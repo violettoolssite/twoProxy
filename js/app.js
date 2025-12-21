@@ -1981,6 +1981,142 @@ async function waitForCursorLogin(email) {
   setTimeout(checkLogin, 10000); // 10秒后开始检查
 }
 
+// 打开 Cursor 注册页面并自动填写
+async function openCursorRegisterPage(accountData) {
+  try {
+    // Cursor 注册页面 URL（需要根据实际情况调整）
+    const registerUrl = 'https://www.cursor.com/signup' || 'https://cursor.sh/signup';
+    
+    // 打开新窗口
+    const registerWindow = window.open(registerUrl, '_blank', 'width=800,height=600');
+    
+    if (!registerWindow) {
+      showNotify('无法打开注册页面，请检查浏览器弹窗设置', 'warning');
+      return;
+    }
+    
+    // 等待页面加载
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // 更新状态
+    const statusText = document.getElementById('cursor-fill-status-text');
+    if (statusText) {
+      statusText.textContent = '正在填写表单...';
+    }
+    
+    // 尝试自动填写表单（需要等待页面完全加载）
+    setTimeout(() => {
+      try {
+        // 通过 postMessage 发送账号信息到新窗口
+        registerWindow.postMessage({
+          type: 'CURSOR_AUTO_FILL',
+          data: {
+            email: accountData.email,
+            firstName: accountData.firstName,
+            lastName: accountData.lastName,
+            password: accountData.password
+          }
+        }, '*');
+        
+        // 更新状态
+        if (statusText) {
+          statusText.textContent = '表单已填写，等待验证码...';
+        }
+        
+        // 开始监听验证码
+        startCursorVerificationCodeListener(accountData.email, registerWindow);
+      } catch (error) {
+        console.error('自动填写失败:', error);
+        if (statusText) {
+          statusText.textContent = '自动填写失败，请手动填写';
+        }
+      }
+    }, 3000);
+    
+  } catch (error) {
+    console.error('打开注册页面失败:', error);
+    showNotify('打开注册页面失败', 'error');
+  }
+}
+
+// 监听验证码并自动填写
+async function startCursorVerificationCodeListener(email, registerWindow) {
+  let attempts = 0;
+  const maxAttempts = 60; // 最多等待10分钟（每10秒检查一次）
+  
+  const checkVerificationCode = async () => {
+    attempts++;
+    
+    try {
+      // 从临时邮箱服务获取邮件
+      const emailDomain = email.split('@')[1];
+      const emailApiUrl = `https://${emailDomain}/api/emails/${encodeURIComponent(email)}`;
+      
+      const response = await fetch(emailApiUrl);
+      const result = await response.json();
+      
+      if (result.emails && result.emails.length > 0) {
+        // 查找验证码邮件
+        for (const mail of result.emails) {
+          const subject = mail.subject || '';
+          const text = mail.text || '';
+          const html = mail.html || '';
+          
+          // 提取验证码（6位数字）
+          const codeMatch = (text + html).match(/\b\d{6}\b/);
+          if (codeMatch) {
+            const code = codeMatch[0];
+            
+            // 更新状态
+            const statusTextEl = document.getElementById('cursor-fill-status-text');
+            if (statusTextEl) {
+              statusTextEl.textContent = `验证码已收到: ${code}，正在自动填写...`;
+            }
+            
+            // 尝试自动填写验证码到注册页面
+            try {
+              registerWindow.postMessage({
+                type: 'CURSOR_FILL_CODE',
+                code: code
+              }, '*');
+              
+              showNotify(`验证码已自动填写: ${code}`, 'success');
+              
+              // 更新状态
+              if (statusTextEl) {
+                statusTextEl.textContent = `验证码已填写: ${code}`;
+              }
+              
+              return; // 找到验证码，停止检查
+            } catch (error) {
+              console.error('自动填写验证码失败:', error);
+            }
+          }
+        }
+      }
+      
+      // 继续检查
+      if (attempts < maxAttempts) {
+        setTimeout(checkVerificationCode, 10000); // 每10秒检查一次
+      } else {
+        const statusTextEl3 = document.getElementById('cursor-fill-status-text');
+        if (statusTextEl3) {
+          statusTextEl3.textContent = '等待验证码超时，请手动查看邮箱';
+        }
+        showNotify('等待验证码超时，请手动查看邮箱', 'warning');
+      }
+    } catch (error) {
+      console.error('检查验证码失败:', error);
+      if (attempts < maxAttempts) {
+        setTimeout(checkVerificationCode, 10000);
+      }
+    }
+  };
+  
+  // 5秒后开始检查
+  setTimeout(checkVerificationCode, 5000);
+}
+
 // 复制密码
 function copyCursorPassword() {
   if (!cursorAccountData || !cursorAccountData.password) {
