@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/admin');
 const smsRoutes = require('./routes/sms');
 const downloadRoutes = require('./routes/download');
 const cursorRoutes = require('./routes/cursor');
+const p2pRoutes = require('./routes/p2p');
 
 const app = express();
 
@@ -67,6 +68,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/download', downloadRoutes);
 app.use('/api/cursor', cursorRoutes);
+app.use('/api/p2p', p2pRoutes);
 
 // 内部接口（只允许本机访问）
 app.use('/api/internal', (req, res, next) => {
@@ -94,9 +96,12 @@ app.use((err, req, res, next) => {
 
 // 启动服务器
 const PORT = config.port;
-app.listen(PORT, '127.0.0.1', () => {
+const server = app.listen(PORT, '127.0.0.1', () => {
   console.log(`[Mirror API] Server running on http://127.0.0.1:${PORT}`);
   console.log(`[Mirror API] Environment: ${config.nodeEnv}`);
+  
+  // 启动P2P信令服务器
+  p2pRoutes.setupWebSocketServer(server);
   
   // 启动SMS自动释放定时任务
   const { startAutoRelease } = require('./jobs/sms-auto-release');

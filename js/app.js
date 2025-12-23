@@ -1,4 +1,4 @@
-const pages = ["github", "docker", "download", "email", "sms", "cursor", "sponsors"];
+const pages = ["github", "docker", "download", "email", "sms", "cursor", "p2p", "sponsors"];
 
 function showPage(name) {
   pages.forEach(p => {

@@ -33,6 +33,7 @@
     <a href="#/email" id="nav-email">临时邮箱</a>
     <a href="#/sms" id="nav-sms">短信接码</a>
     <a href="#/cursor" id="nav-cursor">YLJD Cursor</a>
+    <a href="#/p2p" id="nav-p2p">P2P传输</a>
     <a href="#/sponsors" id="nav-sponsors">感谢名单</a>
     <a href="/user/" id="nav-user" class="btn-login">登录 / 注册</a>
   </nav>
@@ -668,6 +669,100 @@ sudo systemctl restart docker</pre>
     </div>
   </section>
 
+  <!-- P2P 文件传输 -->
+  <section class="card glass" id="page-p2p" style="display: none;">
+    <div class="card-header">
+      <div>
+        <p class="eyebrow">安全传输</p>
+        <h2>P2P 文件传输</h2>
+      </div>
+      <div class="tag purple">端到端加密</div>
+    </div>
+    
+    <div class="card-content">
+      <p style="font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 16px;">
+        使用 WebRTC 技术实现点对点文件传输，支持端到端加密，无需经过服务器，安全快速。
+      </p>
+      
+      <!-- 功能说明 -->
+      <div style="margin-bottom: 24px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border-left: 3px solid #3b82f6;">
+        <p style="font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 8px;">
+          <strong>💡 功能特性：</strong>
+        </p>
+        <ul style="font-size: 12px; color: var(--text); line-height: 1.8; padding-left: 20px; margin-bottom: 0;">
+          <li>点对点直连，无需经过服务器中转</li>
+          <li>端到端加密，确保文件传输安全</li>
+          <li>支持大文件传输（无大小限制）</li>
+          <li>实时传输进度显示</li>
+          <li>自动生成分享链接和密码</li>
+        </ul>
+      </div>
+      
+      <!-- 连接状态 -->
+      <div id="p2p-status" style="margin-bottom: 24px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div id="p2p-status-indicator" style="width: 12px; height: 12px; border-radius: 50%; background: #6b7280;"></div>
+          <span id="p2p-status-text" style="font-size: 14px; color: var(--text);">未连接</span>
+        </div>
+        <div id="p2p-room-info" style="display: none;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">房间ID:</div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <code id="p2p-room-id" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px; word-break: break-all;"></code>
+            <button class="btn ghost small" onclick="copyP2PRoomId()">复制</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 操作按钮 -->
+      <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+        <button class="btn primary" onclick="createP2PRoom()" id="btn-create-room">
+          <span>创建房间</span>
+        </button>
+        <button class="btn secondary" onclick="joinP2PRoom()" id="btn-join-room">
+          <span>加入房间</span>
+        </button>
+        <button class="btn ghost" onclick="disconnectP2P()" id="btn-disconnect" style="display: none;">
+          <span>断开连接</span>
+        </button>
+      </div>
+      
+      <!-- 文件发送区域 -->
+      <div id="p2p-send-section" style="display: none; margin-bottom: 24px;">
+        <div class="card glass" style="padding: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text);">发送文件</h3>
+          <div style="border: 2px dashed rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer;" 
+               onclick="document.getElementById('p2p-file-input').click()"
+               ondrop="handleP2PFileDrop(event)" 
+               ondragover="event.preventDefault()">
+            <input type="file" id="p2p-file-input" style="display: none;" onchange="handleP2PFileSelect(event)" multiple>
+            <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+            <p style="font-size: 14px; color: var(--text); margin-bottom: 8px;">点击选择文件或拖拽文件到此处</p>
+            <p style="font-size: 12px; color: var(--text-muted);">支持多文件选择</p>
+          </div>
+          <div id="p2p-file-list" style="margin-top: 16px;"></div>
+        </div>
+      </div>
+      
+      <!-- 文件接收区域 -->
+      <div id="p2p-receive-section" style="display: none;">
+        <div class="card glass" style="padding: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text);">接收文件</h3>
+          <div id="p2p-receive-list" style="min-height: 100px;">
+            <p style="text-align: center; color: var(--text-muted); font-size: 14px;">等待接收文件...</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 传输进度 -->
+      <div id="p2p-progress-section" style="display: none; margin-top: 24px;">
+        <div class="card glass" style="padding: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text);">传输进度</h3>
+          <div id="p2p-progress-list"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 邀请码说明（页面底部） -->
   <section class="card glass" style="max-width: 900px; margin: 32px auto 24px auto;">
     <div style="padding: 24px;">
@@ -905,5 +1000,6 @@ sudo systemctl restart docker</pre>
 }
 </style>
   <script src="./js/app.js?v=20250130"></script>
+  <script src="./js/p2p.js?v=20250130"></script>
 </body>
 </html>
