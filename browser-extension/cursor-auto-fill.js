@@ -102,9 +102,24 @@
           console.warn('[Cursor Auto Fill] 未找到邮箱输入框');
         }
         
-        // 显示成功提示
-        if (firstNameInput && lastNameInput && emailInput) {
-          showNotification('✅ 表单已自动填写！请检查信息后点击"继续"按钮');
+        // 如果所有字段都填写完成，自动点击"继续"按钮
+        if (firstNameInput && lastNameInput && emailInput && data.firstName && data.lastName && data.email) {
+          showNotification('✅ 姓名和邮箱已填写，正在自动点击"继续"按钮...', 'success');
+          
+          // 等待一下让表单验证通过
+          setTimeout(() => {
+            clickContinueButton().then(() => {
+              // 点击成功后，等待密码输入框出现并填写密码
+              if (data.password) {
+                setTimeout(() => {
+                  fillPassword(data.password);
+                }, 2000);
+              }
+            }).catch(() => {
+              console.warn('[Cursor Auto Fill] 未找到"继续"按钮，请手动点击');
+              showNotification('⚠️ 未找到"继续"按钮，请手动点击', 'warning');
+            });
+          }, 1000);
         } else {
           showNotification('⚠️ 部分字段未找到，请手动填写缺失的字段', 'warning');
         }
@@ -126,6 +141,116 @@
   }
 
   /**
+   * 点击"继续"按钮
+   */
+  function clickContinueButton() {
+    return new Promise((resolve, reject) => {
+      // 多种方法查找"继续"按钮
+      let continueButton = null;
+      
+      // 方法1: 通过按钮文本查找
+      const buttons = Array.from(document.querySelectorAll('button, a[role="button"], input[type="submit"]'));
+      continueButton = buttons.find(btn => {
+        const text = (btn.textContent || btn.innerText || '').trim().toLowerCase();
+        return text.includes('继续') || 
+               text.includes('continue') || 
+               text.includes('next') ||
+               text === 'continue' ||
+               text === 'next';
+      });
+      
+      // 方法2: 通过 aria-label 或其他属性
+      if (!continueButton) {
+        continueButton = document.querySelector('button[aria-label*="继续" i]') ||
+                        document.querySelector('button[aria-label*="continue" i]') ||
+                        document.querySelector('button[type="submit"]') ||
+                        document.querySelector('input[type="submit"]');
+      }
+      
+      // 方法3: 查找包含特定类的按钮
+      if (!continueButton) {
+        continueButton = document.querySelector('button.continue') ||
+                        document.querySelector('button.btn-primary') ||
+                        document.querySelector('button[class*="continue" i]');
+      }
+      
+      if (continueButton) {
+        // 确保按钮可见且可点击
+        if (continueButton.offsetParent !== null && !continueButton.disabled) {
+          console.log('[Cursor Auto Fill] 找到"继续"按钮，正在点击...');
+          
+          // 触发点击事件
+          continueButton.click();
+          
+          // 也尝试触发鼠标事件（某些框架需要）
+          const mouseEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          continueButton.dispatchEvent(mouseEvent);
+          
+          showNotification('✅ 已自动点击"继续"按钮', 'success');
+          resolve();
+        } else {
+          console.warn('[Cursor Auto Fill] "继续"按钮不可点击');
+          reject(new Error('按钮不可点击'));
+        }
+      } else {
+        console.warn('[Cursor Auto Fill] 未找到"继续"按钮');
+        reject(new Error('未找到按钮'));
+      }
+    });
+  }
+
+  /**
+   * 填写密码
+   */
+  function fillPassword(password) {
+    console.log('[Cursor Auto Fill] 开始填写密码');
+    
+    const tryFillPassword = () => {
+      try {
+        // 查找密码输入框
+        let passwordInput = findInputByLabel('密码') || 
+                           findInputByLabel('Password') || 
+                           findInputByPlaceholder('密码') ||
+                           findInputByPlaceholder('Password') ||
+                           document.querySelector('input[type="password"]') ||
+                           document.querySelector('input[name*="password" i]') ||
+                           document.querySelector('input[id*="password" i]');
+        
+        if (passwordInput) {
+          setInputValue(passwordInput, password);
+          triggerInputEvent(passwordInput);
+          console.log('[Cursor Auto Fill] 已填写密码');
+          showNotification('✅ 密码已自动填写，正在点击"继续"按钮...', 'success');
+          
+          // 等待一下让表单验证通过，然后再次点击"继续"
+          setTimeout(() => {
+            clickContinueButton().then(() => {
+              showNotification('✅ 已自动点击"继续"按钮，等待验证码...', 'success');
+            }).catch(() => {
+              console.warn('[Cursor Auto Fill] 未找到第二个"继续"按钮');
+              showNotification('⚠️ 密码已填写，请手动点击"继续"按钮', 'warning');
+            });
+          }, 1000);
+        } else {
+          console.warn('[Cursor Auto Fill] 未找到密码输入框，等待页面加载...');
+          // 如果没找到，等待一下再试（可能是密码页面还没加载）
+          setTimeout(tryFillPassword, 2000);
+        }
+      } catch (error) {
+        console.error('[Cursor Auto Fill] 填写密码失败:', error);
+        showNotification('❌ 填写密码失败，请手动填写', 'error');
+      }
+    };
+    
+    // 立即尝试，如果失败则等待
+    tryFillPassword();
+  }
+
+  /**
    * 填写验证码
    */
   function fillVerificationCode(code) {
@@ -140,22 +265,27 @@
                        findInputByPlaceholder('验证码') ||
                        findInputByPlaceholder('Verification code') ||
                        findInputByPlaceholder('Code') ||
+                       findInputByPlaceholder('Enter code') ||
                        document.querySelector('input[type="text"][maxlength="6"]') ||
                        document.querySelector('input[type="text"][maxlength="8"]') ||
                        document.querySelector('input[pattern*="[0-9]"]') ||
                        document.querySelector('input[name*="code" i]') ||
-                       document.querySelector('input[id*="code" i]');
+                       document.querySelector('input[id*="code" i]') ||
+                       document.querySelector('input[name*="verification" i]') ||
+                       document.querySelector('input[id*="verification" i]');
         
         // 如果还没找到，尝试查找所有输入框，选择最可能的
         if (!codeInput) {
-          const allInputs = Array.from(document.querySelectorAll('input[type="text"]'));
+          const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="tel"]'));
           // 查找包含数字限制或验证码相关属性的输入框
           codeInput = allInputs.find(input => 
             input.maxLength === 6 || 
             input.maxLength === 8 ||
-            input.pattern && input.pattern.includes('[0-9]') ||
-            input.name && input.name.toLowerCase().includes('code') ||
-            input.id && input.id.toLowerCase().includes('code')
+            (input.pattern && input.pattern.includes('[0-9]')) ||
+            (input.name && input.name.toLowerCase().includes('code')) ||
+            (input.id && input.id.toLowerCase().includes('code')) ||
+            (input.name && input.name.toLowerCase().includes('verification')) ||
+            (input.id && input.id.toLowerCase().includes('verification'))
           );
         }
         
@@ -163,7 +293,29 @@
           setInputValue(codeInput, code);
           triggerInputEvent(codeInput);
           console.log('[Cursor Auto Fill] 验证码已填写:', code);
-          showNotification(`✅ 验证码已自动填写: ${code}`);
+          showNotification(`✅ 验证码已自动填写: ${code}，正在自动提交...`, 'success');
+          
+          // 等待一下让表单验证通过，然后自动提交或点击继续
+          setTimeout(() => {
+            // 尝试查找并点击提交按钮
+            const submitButton = document.querySelector('button[type="submit"]') ||
+                                document.querySelector('input[type="submit"]') ||
+                                Array.from(document.querySelectorAll('button')).find(btn => {
+                                  const text = (btn.textContent || '').trim().toLowerCase();
+                                  return text.includes('继续') || 
+                                         text.includes('continue') || 
+                                         text.includes('verify') ||
+                                         text.includes('确认') ||
+                                         text.includes('confirm');
+                                });
+            
+            if (submitButton && submitButton.offsetParent !== null && !submitButton.disabled) {
+              submitButton.click();
+              showNotification('✅ 已自动提交验证码', 'success');
+            } else {
+              console.log('[Cursor Auto Fill] 未找到提交按钮，验证码已填写');
+            }
+          }, 1000);
         } else {
           console.warn('[Cursor Auto Fill] 未找到验证码输入框，等待页面加载...');
           // 如果没找到，等待一下再试（可能是验证码页面还没加载）

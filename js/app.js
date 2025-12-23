@@ -2221,6 +2221,13 @@ async function openCursorRegisterPage(accountData) {
       startCursorVerificationCodeListener(accountData.email, helperWindow);
     }, 2000);
     
+    } catch (error) {
+      console.error('[Cursor] 自动填写过程出错:', error);
+      if (statusText) {
+        statusText.textContent = '自动填写过程出错，请查看辅助窗口手动填写';
+      }
+    }
+    
   } catch (error) {
     console.error('打开注册页面失败:', error);
     showNotify('打开注册页面失败', 'error');
@@ -2261,20 +2268,27 @@ async function startCursorVerificationCodeListener(email, registerWindow) {
               statusTextEl.textContent = `验证码已收到: ${code}，正在自动填写...`;
             }
             
-            // 发送验证码到辅助窗口
+            // 发送验证码到注册窗口（扩展会监听并自动填写）
             try {
               if (registerWindow && !registerWindow.closed) {
+                // 发送给扩展的消息类型
+                registerWindow.postMessage({
+                  type: 'CURSOR_FILL_CODE',
+                  code: code
+                }, '*');
+                
+                // 也发送给辅助窗口（如果存在）
                 registerWindow.postMessage({
                   type: 'CURSOR_VERIFICATION_CODE',
                   code: code
                 }, '*');
               }
               
-              showNotify(`验证码已收到: ${code}，请查看辅助窗口`, 'success');
+              showNotify(`验证码已收到: ${code}，正在自动填写...`, 'success');
               
               // 更新状态
               if (statusTextEl) {
-                statusTextEl.textContent = `验证码已收到: ${code}，请查看辅助窗口复制`;
+                statusTextEl.textContent = `验证码已收到: ${code}，正在自动填写...`;
               }
               
               return; // 找到验证码，停止检查
