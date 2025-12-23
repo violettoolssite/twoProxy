@@ -5,9 +5,21 @@
 ### Chrome/Edge 浏览器
 
 1. **准备扩展文件**
+   
+   方法一：使用安装脚本（推荐）
+   ```bash
+   cd browser-extension
+   ./setup-cursor-extension.sh
+   ```
+   脚本会自动：
+   - 创建 `manifest.json`
+   - 生成图标文件（icon16.png, icon48.png, icon128.png）
+   
+   方法二：手动准备
    - 进入 `browser-extension` 文件夹
    - 将 `manifest-cursor.json` 复制为 `manifest.json`（或重命名）
    - 确保 `cursor-auto-fill.js` 文件存在
+   - 如果缺少图标文件，运行 `node generate-icons.js` 生成
 
 2. **打开扩展管理页面**
    - Chrome: 访问 `chrome://extensions/`
@@ -22,9 +34,9 @@
    - 点击"选择文件夹"
 
 5. **确认安装**
-   - 扩展图标应该出现在浏览器工具栏
+   - 扩展图标应该出现在浏览器工具栏（蓝色圆形，白色 "C" 字母）
    - 扩展名称：YLJD Cursor 自动填写助手
-   - 如果提示缺少图标文件，可以忽略（不影响功能）
+   - 如果提示缺少图标文件，运行 `node generate-icons.js` 生成
 
 ## 🚀 使用方法
 
@@ -84,5 +96,5 @@
 
 ---
 
-**最后更新**: 2025-12-21
+**最后更新**: 2025-01-29
 

@@ -25,6 +25,30 @@ if [ ! -f "cursor-auto-fill.js" ]; then
   exit 1
 fi
 
+# 检查并生成图标文件
+echo "🎨 检查图标文件..."
+if [ ! -f "icon16.png" ] || [ ! -f "icon48.png" ] || [ ! -f "icon128.png" ]; then
+  echo "📦 图标文件缺失，正在生成..."
+  
+  if command -v node &> /dev/null; then
+    if [ -f "generate-icons.js" ]; then
+      node generate-icons.js
+      if [ $? -eq 0 ]; then
+        echo "✅ 图标已生成"
+      else
+        echo "⚠️  图标生成失败，请手动创建图标文件"
+      fi
+    else
+      echo "⚠️  generate-icons.js 不存在，请手动创建图标文件"
+    fi
+  else
+    echo "⚠️  Node.js 未安装，请手动创建图标文件"
+    echo "   需要创建: icon16.png, icon48.png, icon128.png"
+  fi
+else
+  echo "✅ 图标文件已存在"
+fi
+
 # 备份原有的 manifest.json（如果存在）
 if [ -f "manifest.json" ] && [ ! -L "manifest.json" ]; then
   echo "📦 备份原有的 manifest.json..."
