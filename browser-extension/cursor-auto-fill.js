@@ -252,13 +252,130 @@
 
   /**
    * 填写验证码
+   * 支持单个输入框或多个独立输入框（每个输入框一个数字）
    */
   function fillVerificationCode(code) {
     console.log('[Cursor Auto Fill] 填写验证码:', code);
     
     const tryFillCode = () => {
       try {
-        // 查找验证码输入框（多种方法）
+        // 首先检查是否有多个独立的验证码输入框（通常是6个，每个输入框一个数字）
+        const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="tel"], input[type="number"]'));
+        
+        // 查找验证码输入框组（通常是6个连续的输入框，每个 maxlength="1"）
+        // 方法1: 通过 maxlength="1" 查找
+        let codeInputs = allInputs.filter(input => input.maxLength === 1);
+        
+        // 方法2: 如果没找到，查找包含验证码相关类名或属性的输入框
+        if (codeInputs.length < 6) {
+          codeInputs = allInputs.filter(input => {
+            const className = input.className || '';
+            const id = input.id || '';
+            const name = input.name || '';
+            const placeholder = input.placeholder || '';
+            
+            return className.toLowerCase().includes('code') ||
+                   className.toLowerCase().includes('verification') ||
+                   className.toLowerCase().includes('digit') ||
+                   id.toLowerCase().includes('code') ||
+                   id.toLowerCase().includes('verification') ||
+                   id.toLowerCase().includes('digit') ||
+                   name.toLowerCase().includes('code') ||
+                   name.toLowerCase().includes('verification') ||
+                   placeholder.toLowerCase().includes('code') ||
+                   placeholder.toLowerCase().includes('verification') ||
+                   (input.getAttribute('pattern') && input.getAttribute('pattern').includes('[0-9]'));
+          });
+        }
+        
+        // 方法3: 如果还是没找到，查找所有输入框，选择最可能的6个
+        if (codeInputs.length < 6) {
+          // 查找所有输入框，按位置排序，选择前6个
+          const sortedInputs = allInputs
+            .map(input => ({
+              element: input,
+              rect: input.getBoundingClientRect()
+            }))
+            .filter(item => item.rect.width > 0 && item.rect.height > 0)
+            .sort((a, b) => {
+              // 按位置排序（从上到下，从左到右）
+              if (Math.abs(a.rect.top - b.rect.top) > 10) {
+                return a.rect.top - b.rect.top;
+              }
+              return a.rect.left - b.rect.left;
+            })
+            .map(item => item.element);
+          
+          // 如果找到6个或更多输入框，且它们看起来像验证码输入框（宽度较小）
+          if (sortedInputs.length >= 6) {
+            const narrowInputs = sortedInputs.filter(input => {
+              const rect = input.getBoundingClientRect();
+              return rect.width < 60 && rect.width > 20; // 验证码输入框通常比较窄
+            });
+            
+            if (narrowInputs.length >= 6) {
+              codeInputs = narrowInputs.slice(0, 6);
+            }
+          }
+        }
+        
+        // 如果找到6个独立的输入框，逐个填写
+        if (codeInputs.length >= 6) {
+          console.log('[Cursor Auto Fill] 检测到多个独立验证码输入框，数量:', codeInputs.length);
+          
+          // 只取前6个输入框
+          const inputs = codeInputs.slice(0, 6);
+          
+          // 逐个填写每个数字
+          code.split('').forEach((digit, index) => {
+            if (inputs[index]) {
+              setTimeout(() => {
+                setInputValue(inputs[index], digit);
+                triggerInputEvent(inputs[index]);
+                
+                // 触发键盘事件（某些框架需要）
+                const keyEvent = new KeyboardEvent('keydown', {
+                  bubbles: true,
+                  cancelable: true,
+                  key: digit,
+                  code: `Digit${digit}`
+                });
+                inputs[index].dispatchEvent(keyEvent);
+                
+                const inputEvent = new Event('input', { bubbles: true });
+                inputs[index].dispatchEvent(inputEvent);
+                
+                // 如果是最后一个输入框，自动提交
+                if (index === code.length - 1) {
+                  setTimeout(() => {
+                    // 尝试查找并点击提交按钮
+                    const submitButton = document.querySelector('button[type="submit"]') ||
+                                        document.querySelector('input[type="submit"]') ||
+                                        Array.from(document.querySelectorAll('button')).find(btn => {
+                                          const text = (btn.textContent || '').trim().toLowerCase();
+                                          return text.includes('继续') || 
+                                                 text.includes('continue') || 
+                                                 text.includes('verify') ||
+                                                 text.includes('确认') ||
+                                                 text.includes('confirm');
+                                        });
+                    
+                    if (submitButton && submitButton.offsetParent !== null && !submitButton.disabled) {
+                      submitButton.click();
+                      showNotification('✅ 验证码已自动填写并提交', 'success');
+                    } else {
+                      showNotification(`✅ 验证码已自动填写: ${code}`, 'success');
+                    }
+                  }, 500);
+                }
+              }, index * 100); // 每个输入框间隔100ms
+            }
+          });
+          
+          return;
+        }
+        
+        // 如果没找到多个输入框，尝试查找单个输入框
         let codeInput = findInputByLabel('验证码') || 
                        findInputByLabel('Verification Code') || 
                        findInputByLabel('Code') ||
@@ -276,7 +393,6 @@
         
         // 如果还没找到，尝试查找所有输入框，选择最可能的
         if (!codeInput) {
-          const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="tel"]'));
           // 查找包含数字限制或验证码相关属性的输入框
           codeInput = allInputs.find(input => 
             input.maxLength === 6 || 
@@ -437,6 +553,86 @@
     console.log('[Cursor Auto Fill] Content script 已加载，页面状态:', document.readyState);
   }
   
+  /**
+   * 检测并自动点击 Cloudflare 人机验证
+   */
+  function checkAndClickCloudflareChallenge() {
+    try {
+      // 方法1: 查找 Cloudflare 验证 iframe
+      const cloudflareIframes = Array.from(document.querySelectorAll('iframe')).filter(iframe => {
+        const src = iframe.src || '';
+        return src.includes('challenges.cloudflare.com') || 
+               src.includes('cloudflare.com/cdn-cgi/challenge') ||
+               iframe.id && iframe.id.includes('cf-') ||
+               iframe.className && iframe.className.includes('cf-');
+      });
+      
+      if (cloudflareIframes.length > 0) {
+        console.log('[Cursor Auto Fill] 检测到 Cloudflare 验证 iframe');
+        
+        // 尝试在 iframe 中查找复选框
+        cloudflareIframes.forEach(iframe => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            if (iframeDoc) {
+              // 查找复选框
+              const checkbox = iframeDoc.querySelector('input[type="checkbox"]') ||
+                              iframeDoc.querySelector('#challenge-form') ||
+                              iframeDoc.querySelector('[data-ray]') ||
+                              iframeDoc.querySelector('.cb-lb');
+              
+              if (checkbox) {
+                console.log('[Cursor Auto Fill] 找到 Cloudflare 验证复选框，正在点击...');
+                checkbox.click();
+                showNotification('✅ 已自动点击 Cloudflare 验证', 'success');
+              }
+            }
+          } catch (e) {
+            // 跨域限制，无法访问 iframe 内容
+            console.log('[Cursor Auto Fill] 无法访问 iframe 内容（跨域限制）');
+          }
+        });
+      }
+      
+      // 方法2: 查找页面上的 Cloudflare 验证元素
+      const cloudflareElements = document.querySelectorAll('[data-ray], [id*="cf-"], [class*="cf-"], [id*="challenge"], [class*="challenge"]');
+      if (cloudflareElements.length > 0) {
+        console.log('[Cursor Auto Fill] 检测到 Cloudflare 验证元素');
+        
+        // 查找复选框或按钮
+        const checkbox = document.querySelector('input[type="checkbox"][id*="cf-"]') ||
+                        document.querySelector('input[type="checkbox"][class*="cf-"]') ||
+                        document.querySelector('input[type="checkbox"][data-ray]') ||
+                        document.querySelector('input[type="checkbox"]#challenge-form') ||
+                        document.querySelector('input[type="checkbox"].cb-lb');
+        
+        if (checkbox && checkbox.offsetParent !== null && !checkbox.checked) {
+          console.log('[Cursor Auto Fill] 找到 Cloudflare 验证复选框，正在点击...');
+          checkbox.click();
+          showNotification('✅ 已自动点击 Cloudflare 验证', 'success');
+        }
+      }
+      
+      // 方法3: 通过文本查找（"Verify you are human" 等）
+      const verifyTexts = ['verify', 'human', 'robot', 'challenge', '验证', '人机'];
+      const allElements = Array.from(document.querySelectorAll('*'));
+      const verifyElement = allElements.find(el => {
+        const text = (el.textContent || '').toLowerCase();
+        return verifyTexts.some(keyword => text.includes(keyword)) && 
+               (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.onclick);
+      });
+      
+      if (verifyElement) {
+        console.log('[Cursor Auto Fill] 找到验证相关元素，正在点击...');
+        verifyElement.click();
+        showNotification('✅ 已自动点击验证', 'success');
+      }
+      
+    } catch (error) {
+      console.error('[Cursor Auto Fill] 检测 Cloudflare 验证失败:', error);
+    }
+  }
+
   // 定期检查是否有新字段出现（用于动态加载的表单）
   let checkInterval = null;
   const startFieldChecker = () => {
@@ -448,8 +644,26 @@
       if (inputs.length > 0) {
         console.log('[Cursor Auto Fill] 检测到输入框，等待填写指令...');
       }
+      
+      // 检查 Cloudflare 验证
+      checkAndClickCloudflareChallenge();
     }, 2000);
   };
+  
+  // 页面加载后立即检查一次 Cloudflare 验证
+  setTimeout(() => {
+    checkAndClickCloudflareChallenge();
+  }, 2000);
+  
+  // 监听 DOM 变化，检测新出现的 Cloudflare 验证
+  const observer = new MutationObserver(() => {
+    checkAndClickCloudflareChallenge();
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
   
   startFieldChecker();
 })();
